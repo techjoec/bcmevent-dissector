@@ -1596,8 +1596,9 @@ function bcm.dissector(tvb, pinfo, tree)
     local function info_text(ename)
         local info = {ename, "[" .. (sname or tostring(status)) .. "]"}
         if ifname ~= "" then info[#info+1] = ifname end
+        -- ESCAN_RESULT puts the BSSID there, and the scan summary already shows it.
         local sta = macstr(tvb, eo + 24)
-        if sta ~= "00:00:00:00:00:00" then info[#info+1] = "sta=" .. sta end
+        if sta ~= "00:00:00:00:00:00" and etype ~= 69 then info[#info+1] = "sta=" .. sta end
         if rname then info[#info+1] = "reason=" .. rname end
         return table.concat(info, " ")
     end
