@@ -1,5 +1,7 @@
 # bcmevent-dissector
 
+[![Release](https://img.shields.io/github/v/release/techjoec/bcmevent-dissector)](https://github.com/techjoec/bcmevent-dissector/releases/latest)
+
 Wireshark Lua dissector for Broadcom Wi-Fi firmware events (EtherType `0x886c`).
 
 Broadcom FullMAC and HND (router) firmware reports scan results,
@@ -16,7 +18,9 @@ Not affiliated with Broadcom.
 Needs Wireshark 2.4 or newer with Lua support, which the Windows and macOS
 installers include.
 
-Copy `bcmevent.lua` into the folder that **About Wireshark > Folders** lists
+Download [`bcmevent.lua`](https://github.com/techjoec/bcmevent-dissector/releases/latest/download/bcmevent.lua)
+from the [latest release](https://github.com/techjoec/bcmevent-dissector/releases/latest)
+and copy it into the folder that **About Wireshark > Folders** lists
 as **Personal Lua Plugins** (**Personal Plugins** before 2.6), then restart
 Wireshark or use **Analyze > Reload Lua Plugins** (Ctrl+Shift+L).
 
