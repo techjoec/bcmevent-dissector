@@ -206,6 +206,29 @@ frames = [
     ether(event(199, b"\x02", addr=bytes(6))),                           # PWR_SAVE_SYNC, 1 byte
     ether(event(199, struct.pack("<i", 0), addr=bytes(6))),              # PWR_SAVE_SYNC, int
     ether(event(201, struct.pack("<I", 2), addr=bytes(6))),              # BAND_CHANGE
+    ether(event(0, b"example")),                                         # SET_SSID
+    ether(event(7, struct.pack("<HHH", 0x0411, 0, 0xc001) + ie(1, b"\x82\x84") + ie(221, bytes(7)))),  # ASSOC
+    ether(event(9, struct.pack("<HH", 0x0431, 10) + AP + ie(0, b"example"))),  # REASSOC, request body
+    ether(event(26, struct.pack("<III", 12 + 128 + 9, 109, 1)          # SCAN_COMPLETE with results
+                + bss(b"example", 0x1006, -55, 6, ie(0, b"example")))),
+    ether(event(60, struct.pack("<I", 0x1234), status=0)),               # ACTION_FRAME_COMPLETE
+    ether(event(149, ie(1, b"\x82\x84") + ie(45, bytes(26)), addr=AP)),  # PRE_ASSOC_RSEP_IND, elements
+    ether(event(156, bytes([10, 8, 1, 0, 0]))),                          # BSSTRANS_RESP, WNM action body
+    ether(event(187, mgmt(13, bytes([10, 7, 1, 0, 0])))),                # WNM_ERR, action frame
+    ether(event(191, bytes([10, 7, 2, 1, 0, 0, 0, 0]))),                 # BSSTRANS_REQ
+    ether(event(192, bytes([10, 6, 3, 0]))),                             # BSSTRANS_QUERY
+    ether(event(196, bytes([10, 26, 4, 221]))),                          # WNM_NOTIFICATION_REQ
+    ether(event(166, struct.pack("<HHHH", 1, 16, 2, 8) + struct.pack("<HHH", 2, 1, 0)
+                + ie(54, b"\x01\x02\x00"))),                             # FBT, over-the-air auth body
+    ether(event(188, struct.pack("<HHH", 0, 1, 0))),                     # ASSOC_FAIL, auth body
+    ether(event(195, struct.pack("<HHBBBB", 1, 8, 3, 0x40, 1, 0), addr=bytes(6))),  # MBO_CAPABILITY_STATUS
+    ether(event(198, struct.pack("<HH", 256, 4) + struct.pack("<HH", 258, 263))),  # GAS_RQST_ANQP_QUERY
+    ether(event(200, rxmeta_v2(0x1006) + ie(0, b"") + ie(1, b"\x82"))),  # PROBREQ_MSG_RX_EXT, elements
+    ether(event(172, b"\x01" + bytes(27) + struct.pack("<II", 7, 40) + b"\x05\x06\x07\x08",
+                addr=bytes(6))),                                         # AIRIQ_EVENT
+    ether(event(179, struct.pack("<BxxxI", 2, 12) + struct.pack("<I", 4), addr=bytes(6))),  # LTE_U_EVENT
+    ether(event(172, bytes(30))),                                        # AIRIQ, length mismatch: payload
+    ether(event(198, struct.pack("<HH", 256, 9) + bytes(2))),            # ANQP length overrun: payload
     ether(event(209, bytes(20))),                                        # DHD CSI_DATA: stays payload
     ether(event(202, bytes(40))),                                        # DHD PFN_PARTIAL_RESULT: payload
 ]

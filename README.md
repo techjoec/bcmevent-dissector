@@ -45,6 +45,9 @@ Remove any **Decode As** rule for EtherType `0x886c`. It overrides this plugin.
 - Deauthentication and disassociation frame bodies, ADDTS delay, country
   code, FIFO credits, credit borrowing, FT key, power-save mode and band
   change
+- SSID, association and authentication bodies, scan results, action-frame
+  completion, WNM and FT events, MBO status, ANQP queries, extended probe
+  requests, AirIQ and LTE-U event headers
 
 Event data with no public layout is shown as `bcmevent.payload`.
 

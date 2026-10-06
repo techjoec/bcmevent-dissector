@@ -418,6 +418,7 @@ local EVENT_FLAGS = {
 
 -- wl_escan_result_t and wl_bss_info_t
 f.es_buflen = ProtoField.uint32("bcmevent.escan.buflen", "Scan Buffer Length", base.DEC)
+f.sr_count = ProtoField.uint32("bcmevent.scan_results.count", "BSS Count", base.DEC)
 f.es_version = ProtoField.uint32("bcmevent.escan.version", "Scan Version", base.DEC)
 f.es_sync = ProtoField.uint16("bcmevent.escan.sync_id", "Scan Sync ID", base.HEX)
 f.es_count = ProtoField.uint16("bcmevent.escan.bss_count", "BSS Count", base.DEC)
@@ -706,6 +707,44 @@ local PM_MODES = {[0]="PM_OFF", [1]="PM_MAX", [2]="PM_FAST"}
 local BANDS = {[0]="AUTO", [1]="5G", [2]="2G", [3]="ALL", [4]="6G"}
 f.pm_mode = ProtoField.uint32("bcmevent.pm_mode", "Power Management Mode", base.DEC, PM_MODES)
 f.band = ProtoField.uint32("bcmevent.band", "Band", base.DEC, BANDS)
+
+-- Frame bodies and small structures in other events
+local MBO_DISALLOW_REASONS = {
+    [0]="Allowed", [1]="Unspecified", [2]="Maximum stations reached", [3]="Air interface overloaded",
+    [4]="Authentication server overloaded", [5]="Insufficient RSSI"
+}
+local ANQP_IDS = {
+    [256]="Query List", [257]="Capability List", [258]="Venue Name", [259]="Emergency Call Number",
+    [260]="Network Authentication Type", [261]="Roaming Consortium", [262]="IP Address Type Availability",
+    [263]="NAI Realm", [264]="3GPP Cellular Network", [265]="AP Geospatial Location",
+    [266]="AP Civic Location", [267]="AP Location Public URI", [268]="Domain Name",
+    [269]="Emergency Alert URI", [270]="TDLS Capability", [271]="Emergency NAI",
+    [272]="Neighbor Report", [277]="Venue URI", [56797]="Vendor Specific"
+}
+f.ssid = ProtoField.string("bcmevent.ssid", "SSID")
+f.assoc_status = ProtoField.uint16("bcmevent.mgmt.assoc.status", "Status Code", base.DEC)
+f.assoc_aid = ProtoField.uint16("bcmevent.mgmt.assoc.aid", "Association ID", base.HEX)
+f.af_packet_id = ProtoField.uint32("bcmevent.action_frame.packet_id", "Packet ID", base.HEX)
+f.fbt_version = ProtoField.uint16("bcmevent.fbt.version", "FBT Event Version", base.DEC)
+f.fbt_length = ProtoField.uint16("bcmevent.fbt.length", "FBT Event Length", base.DEC)
+f.fbt_type = ProtoField.uint16("bcmevent.fbt.type", "FBT Event Type", base.DEC,
+    {[0]="Unknown", [1]="Over-the-DS auth request", [2]="Over-the-air auth request"})
+f.fbt_data_offset = ProtoField.uint16("bcmevent.fbt.data_offset", "Data Offset", base.DEC)
+f.mbo_version = ProtoField.uint16("bcmevent.mbo.version", "MBO Status Version", base.DEC)
+f.mbo_length = ProtoField.uint16("bcmevent.mbo.length", "MBO Status Length", base.DEC)
+f.mbo_disallowed = ProtoField.uint8("bcmevent.mbo.assoc_disallowed", "Association Disallowed", base.DEC,
+    MBO_DISALLOW_REASONS)
+f.mbo_ap_cap = ProtoField.uint8("bcmevent.mbo.ap_capability", "AP Capability", base.HEX)
+f.mbo_enabled = ProtoField.uint8("bcmevent.mbo.enabled", "MBO Enabled", base.DEC)
+f.anqp_id = ProtoField.uint16("bcmevent.anqp.info_id", "ANQP Info ID", base.DEC, ANQP_IDS)
+f.anqp_len = ProtoField.uint16("bcmevent.anqp.length", "ANQP Length", base.DEC)
+f.anqp_query = ProtoField.uint16("bcmevent.anqp.query_id", "Queried Info ID", base.DEC, ANQP_IDS)
+
+f.airiq_type = ProtoField.uint8("bcmevent.airiq.type", "AirIQ Event Type", base.DEC)
+f.airiq_seq = ProtoField.uint32("bcmevent.airiq.sequence", "Sequence", base.DEC)
+f.airiq_len = ProtoField.uint32("bcmevent.airiq.length", "AirIQ Length", base.DEC)
+f.lteu_type = ProtoField.uint8("bcmevent.lte_u.type", "LTE-U Event Type", base.DEC)
+f.lteu_len = ProtoField.uint32("bcmevent.lte_u.length", "LTE-U Length", base.DEC)
 
 -- bcm_dngl_event_msg_t
 f.dngl_version = ProtoField.uint16("bcmevent.dngl.version", "Dongle Event Version", base.DEC)
@@ -1225,33 +1264,15 @@ local function parse_mgmt(tvb, off, len, tree)
     return sname
 end
 
-local function parse_escan(tvb, off, len, tree)
-    if len < 12 then
-        tree:add(f.payload, tvb(off,len))
-        return nil
-    end
-    local buflen = tvb(off,4):le_uint()
-    local count = tvb(off+10,2):le_uint()
-    local et = tree:add(tvb(off,len), "Enhanced Scan Result")
-    et:add_le(f.es_buflen, tvb(off,4))
-    et:add_le(f.es_version, tvb(off+4,4))
-    et:add_le(f.es_sync, tvb(off+8,2))
-    et:add_le(f.es_count, tvb(off+10,2))
-    et:append_text(string.format(", %u BSS", count))
-    if buflen < 12 then
-        et:add_tvb_expert_info(ef.invalid, tvb(off,4),
-            string.format("Scan buffer length %u is shorter than its 12-byte header", buflen))
-        return nil
-    end
-
-    local p, stop = off + 12, off + math.min(len, buflen)
+-- wl_bss_info_t records, as in escan and scan results
+local function parse_bss_list(tvb, et, p, stop, count, crange)
     local summary
     for i = 1, count do
         if p + 124 > stop then
             if p < stop then
                 truncated(et, tvb(p, stop - p), "Truncated BSS record")
             else
-                truncated(et, tvb(off+10,2), string.format("BSS count is %u, but only %u records fit", count, i - 1))
+                truncated(et, crange, string.format("BSS count is %u, but only %u records fit", count, i - 1))
             end
             break
         end
@@ -1329,6 +1350,42 @@ local function parse_escan(tvb, off, len, tree)
     end
     if summary and count > 1 then summary = summary .. string.format(" (+%u)", count - 1) end
     return summary
+end
+
+local function parse_escan(tvb, off, len, tree)
+    if len < 12 then
+        tree:add(f.payload, tvb(off,len))
+        return nil
+    end
+    local buflen = tvb(off,4):le_uint()
+    local count = tvb(off+10,2):le_uint()
+    local et = tree:add(tvb(off,len), "Enhanced Scan Result")
+    et:add_le(f.es_buflen, tvb(off,4))
+    et:add_le(f.es_version, tvb(off+4,4))
+    et:add_le(f.es_sync, tvb(off+8,2))
+    et:add_le(f.es_count, tvb(off+10,2))
+    et:append_text(string.format(", %u BSS", count))
+    if buflen < 12 then
+        et:add_tvb_expert_info(ef.invalid, tvb(off,4),
+            string.format("Scan buffer length %u is shorter than its 12-byte header", buflen))
+        return nil
+    end
+
+    return parse_bss_list(tvb, et, off + 12, off + math.min(len, buflen), count, tvb(off+10,2))
+end
+
+-- wl_scan_results_t: the same records behind a 32-bit count
+local function parse_scan_results(tvb, off, len, tree)
+    if len < 12 then return nil end
+    local buflen, ver = tvb(off,4):le_uint(), tvb(off+4,4):le_uint()
+    if buflen < 12 or ver < 100 or ver > 200 then return nil end
+    local count = tvb(off+8,4):le_uint()
+    local et = tree:add(tvb(off,len), "Scan Results")
+    et:add_le(f.es_buflen, tvb(off,4))
+    et:add_le(f.es_version, tvb(off+4,4))
+    et:add_le(f.sr_count, tvb(off+8,4))
+    et:append_text(string.format(", %u BSS", count))
+    return parse_bss_list(tvb, et, off + 12, off + math.min(len, buflen), count, tvb(off+8,4)) or "no BSS"
 end
 
 local function parse_if_event(tvb, off, len, tree)
@@ -1841,8 +1898,175 @@ local function parse_band(tvb, off, len, tree)
     return BANDS[tvb(off,4):le_uint()]
 end
 
+local function parse_ssid(tvb, off, len, tree)
+    if len > 32 then return nil end
+    local s = trim_nul(tvb(off,len):string(ENC_UTF_8))
+    tree:add(f.ssid, tvb(off,len), s)
+    return s ~= "" and ('"' .. s .. '"') or "hidden SSID"
+end
+
+-- Association bodies: the fixed fields of a response (6 bytes), request (4)
+-- or reassociation request (10), or bare elements, whichever the elements
+-- then fill exactly.
+local RESP_FIRST = {
+    {6, "Association Response Body"}, {0, "Elements"}, {4, "Association Request Body"},
+    {10, "Reassociation Request Body"}
+}
+local ELEMENTS_FIRST = {{0, "Elements"}, {6, "Association Response Body"}}
+local function assoc_body(tvb, off, len, tree, layouts)
+    for _, l in ipairs(layouts) do
+        local n, title = l[1], l[2]
+        if len >= n and ies_fit(tvb, off + n, len - n) and (n > 0 or len > 0) then
+            local t = tree:add(tvb(off,len), title)
+            local s
+            if n == 6 then
+                t:add_le(f.assoc_cap, tvb(off,2))
+                t:add_le(f.assoc_status, tvb(off+2,2))
+                t:add_le(f.assoc_aid, tvb(off+4,2))
+                s = "response, status " .. tvb(off+2,2):le_uint()
+            elseif n >= 4 then
+                t:add_le(f.assoc_cap, tvb(off,2))
+                t:add_le(f.assoc_listen, tvb(off+2,2))
+                if n == 10 then t:add(f.assoc_current_ap, tvb(off+4,6)) end
+                s = n == 10 and "reassociation request" or "association request"
+            end
+            if len > n then parse_ies(tvb, off + n, len - n, t) end
+            return s or "elements"
+        end
+    end
+    return nil
+end
+local function parse_assoc_body(tvb, off, len, tree) return assoc_body(tvb, off, len, tree, RESP_FIRST) end
+local function parse_assoc_ies(tvb, off, len, tree) return assoc_body(tvb, off, len, tree, ELEMENTS_FIRST) end
+
+-- Authentication body: algorithm, sequence, status, then elements (SAE
+-- carries its own fields instead)
+local function parse_auth_body(tvb, off, len, tree)
+    if len < 6 then return nil end
+    local alg = tvb(off,2):le_uint()
+    if alg ~= 3 and not ies_fit(tvb, off + 6, len - 6) then return nil end
+    local t = tree:add(tvb(off,len), "Authentication Body")
+    t:add_le(f.auth_alg, tvb(off,2))
+    t:add_le(f.auth_seq, tvb(off+2,2))
+    t:add_le(f.auth_status, tvb(off+4,2))
+    if len > 6 then
+        if alg == 3 then t:add(f.payload, tvb(off+6,len-6)) else parse_ies(tvb, off + 6, len - 6, t) end
+    end
+    return string.format("auth algorithm %u, seq %u, status %u", alg, tvb(off+2,2):le_uint(),
+        tvb(off+4,2):le_uint())
+end
+
+-- A received management frame, or just its action body
+local function parse_frame_or_action(tvb, off, len, tree, cats)
+    if looks_like_mgmt(tvb, off, len) then return parse_mgmt(tvb, off, len, tree) end
+    local cat = len >= 2 and tvb(off,1):uint()
+    if cat and ACTION_CATEGORIES[cat] and (not cats or cats[cat]) then
+        local s = parse_action_body(tvb, off, len, tree)
+        if len > 2 then tree:add(f.payload, tvb(off+2,len-2)) end
+        return s
+    end
+    return nil
+end
+local WNM_CATEGORIES = {[10]=true, [11]=true}
+local function parse_wnm(tvb, off, len, tree) return parse_frame_or_action(tvb, off, len, tree, WNM_CATEGORIES) end
+
+local function parse_scan_complete(tvb, off, len, tree)
+    return parse_scan_results(tvb, off, len, tree)
+end
+
+local function parse_af_complete(tvb, off, len, tree)
+    if len ~= 4 then return nil end
+    tree:add_le(f.af_packet_id, tvb(off,4))
+    return string.format("packet 0x%08x", tvb(off,4):le_uint())
+end
+
+local function parse_fbt(tvb, off, len, tree)
+    if len < 8 or tvb(off,2):le_uint() ~= 1 then return nil end
+    local doff = tvb(off+6,2):le_uint()
+    if doff < 8 or doff > len then return nil end
+    local t = tree:add(tvb(off,len), "FBT Event")
+    t:add_le(f.fbt_version, tvb(off,2))
+    t:add_le(f.fbt_length, tvb(off+2,2))
+    t:add_le(f.fbt_type, tvb(off+4,2))
+    t:add_le(f.fbt_data_offset, tvb(off+6,2))
+    local p, n = off + doff, len - doff
+    local typ = tvb(off+4,2):le_uint()
+    local first, second = parse_frame_or_action, parse_auth_body
+    if typ == 2 then first, second = parse_auth_body, parse_frame_or_action end
+    if n > 0 and not (first(tvb, p, n, t) or second(tvb, p, n, t)
+            or (ies_fit(tvb, p, n) and (parse_ies(tvb, p, n, t) or true))) then
+        t:add(f.payload, tvb(p,n))
+    end
+    return ({[1]="over-the-DS auth", [2]="over-the-air auth"})[typ] or ("type " .. typ)
+end
+
+local function parse_mbo_status(tvb, off, len, tree)
+    if len < 8 or tvb(off,2):le_uint() ~= 1 or tvb(off+2,2):le_uint() ~= 8 then return nil end
+    local t = tree:add(tvb(off,8), "MBO Status")
+    t:add_le(f.mbo_version, tvb(off,2))
+    t:add_le(f.mbo_length, tvb(off+2,2))
+    t:add(f.mbo_disallowed, tvb(off+4,1))
+    t:add(f.mbo_ap_cap, tvb(off+5,1))
+    t:add(f.mbo_enabled, tvb(off+6,1))
+    local r = tvb(off+4,1):uint()
+    return r == 0 and "association allowed" or ("association disallowed: " .. (MBO_DISALLOW_REASONS[r] or r))
+end
+
+-- ANQP elements: info ID and length (little-endian), then the payload
+local function parse_anqp(tvb, off, len, tree)
+    local p, stop = off, off + len
+    while p + 4 <= stop do p = p + 4 + tvb(p+2,2):le_uint() end
+    if len < 4 or p ~= stop then return nil end
+    local names = {}
+    p = off
+    while p < stop do
+        local id, n = tvb(p,2):le_uint(), tvb(p+2,2):le_uint()
+        local name = ANQP_IDS[id] or ("Info ID " .. id)
+        local et = tree:add(tvb(p,4+n), "ANQP " .. name)
+        et:add_le(f.anqp_id, tvb(p,2))
+        et:add_le(f.anqp_len, tvb(p+2,2))
+        if id == 256 then
+            for q = p + 4, p + 4 + n - 2, 2 do et:add_le(f.anqp_query, tvb(q,2)) end
+        elseif n > 0 then
+            et:add(f.payload, tvb(p+4,n))
+        end
+        names[#names+1] = name
+        p = p + 4 + n
+    end
+    return "ANQP " .. table.concat(names, ", ")
+end
+
+-- AirIQ: a 36-byte header (type, sequence at 28, length at 32), then data
+local function parse_airiq(tvb, off, len, tree)
+    if len < 36 then return nil end
+    local n = tvb(off+32,4):le_uint()
+    if n ~= len and n + 36 ~= len then return nil end
+    local t = tree:add(tvb(off,len), "AirIQ Event")
+    t:add(f.airiq_type, tvb(off,1))
+    t:add_le(f.airiq_seq, tvb(off+28,4))
+    t:add_le(f.airiq_len, tvb(off+32,4))
+    if len > 36 then t:add(f.payload, tvb(off+36,len-36)) end
+    return string.format("type %u, seq %u", tvb(off,1):uint(), tvb(off+28,4):le_uint())
+end
+
+-- LTE-U: type, total length at 4, then data
+local function parse_lteu(tvb, off, len, tree)
+    if len < 8 or tvb(off+4,4):le_uint() ~= len then return nil end
+    local t = tree:add(tvb(off,len), "LTE-U Event")
+    t:add(f.lteu_type, tvb(off,1))
+    t:add_le(f.lteu_len, tvb(off+4,4))
+    if len > 8 then t:add(f.payload, tvb(off+8,len-8)) end
+    return "type " .. tvb(off,1):uint()
+end
+
 -- Fixed structures, by HND event number
 local DATA_PARSERS = {
+    [172] = parse_airiq, [179] = parse_lteu,
+    [0] = parse_ssid, [7] = parse_assoc_body, [9] = parse_assoc_body, [26] = parse_scan_complete,
+    [60] = parse_af_complete, [149] = parse_assoc_ies, [156] = parse_wnm,
+    [166] = parse_fbt, [187] = parse_frame_or_action, [188] = parse_auth_body,
+    [191] = parse_wnm, [192] = parse_wnm, [195] = parse_mbo_status,
+    [196] = parse_wnm, [198] = parse_anqp,
     [5] = parse_leave_body, [6] = parse_leave_body, [11] = parse_leave_body, [12] = parse_leave_body,
     [27] = parse_addts, [47] = parse_country, [74] = parse_fifo_credit, [117] = parse_borrow,
     [125] = parse_bssid_key, [199] = parse_pm_mode, [201] = parse_band,
@@ -1858,13 +2082,18 @@ local function dissect_data(tvb, etype, reason, off, len, tree)
     if etype == 69 then                                 -- ESCAN_RESULT
         return parse_escan(tvb, off, len, tree)
 
-    elseif etype == 71 or etype == 72 or etype == 91 or etype == 137 then
-        -- PROBRESP_MSG, P2P_PROBREQ_MSG, AUTH_REQ, PROBREQ_MSG_RX: RX metadata, then the frame
+    elseif etype == 71 or etype == 72 or etype == 91 or etype == 137 or etype == 200 then
+        -- PROBRESP_MSG, P2P_PROBREQ_MSG, AUTH_REQ, PROBREQ_MSG_RX, PROBREQ_MSG_RX_EXT:
+        -- RX metadata, then the frame or, for probe requests, its elements alone
         local rh = parse_rxmeta(tvb, off, len, tree)
         if rh == 0 then
             tree:add(f.payload, tvb(off,len))
         elseif len > rh then
             if looks_like_mgmt(tvb, off + rh, len - rh) then return parse_mgmt(tvb, off + rh, len - rh, tree) end
+            if etype ~= 71 and etype ~= 91 and ies_fit(tvb, off + rh, len - rh) then
+                parse_ies(tvb, off + rh, len - rh, tree:add(tvb(off+rh,len-rh), "Probe Request Elements"))
+                return "probe request"
+            end
             tree:add(f.payload, tvb(off+rh,len-rh))
         end
 
