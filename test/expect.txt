@@ -65,3 +65,9 @@ bcmevent.mgmt.btm.target_bssid == 02:00:00:00:00:03 && bcmevent.mgmt.btm.status 
 bcmevent.mgmt.btm.request_mode.disassoc_imminent && bcmevent.mgmt.btm.disassoc_timer == 100
 bcmevent.event.type == 191 && bcmevent.ie.id == 52
 bcmevent.mgmt.btm.query_reason == 16
+bcmevent.airiq.msg.type == 2 && bcmevent.airiq.fft.fc_mhz == 2437 && bcmevent.airiq.fft.flags.last
+bcmevent.airiq.fft.bins == 64 && bcmevent.airiq.chanspec == 0x1006 && bcmevent.airiq.data_bytes == 8
+bcmevent.airiq.type == 2 && bcmevent.airiq.scan_complete == 1 && bcmevent.airiq.scan.tsf_end == 0x2000
+bcmevent.lte_u.abort_reason == 4
+bcmevent.lte_u.present == 1 && bcmevent.lte_u.rssi == -70 && bcmevent.lte_u.chanspec == 0xd095
+bcmevent.lte_u.iq.message_type == 1 && bcmevent.lte_u.iq.seqno == 3 && bcmevent.airiq.samples

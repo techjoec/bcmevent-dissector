@@ -234,6 +234,15 @@ frames = [
           etype=0x88b7),                                                 # AIRIQ_EVENT as 0x88b7
     ether(b"\x00\x00\x00\x00\x01" + bytes(20), etype=0x88b7),             # other 0x88b7: OUI Extended
     ether(event(214, b"\x03" + bytes(27) + struct.pack("<II", 1, 36), addr=bytes(6))),  # DHD AIRIQ_EVENT
+    ether(event(172, struct.pack("<Bxxx3I3III", 1, 0, 0, 0, 0, 0, 0, 12, 36 + 48)   # AIRIQ FFT data
+                + struct.pack("<IIHHhHHHHHIIH6x", 2, 48, 129, 0, 0x0310, 2437, 0x1006, 64, 5, 3, 1000, 8, 0)
+                + bytes(range(8)), addr=bytes(6))),
+    ether(event(172, struct.pack("<Bxxx3I3III", 2, 1, 0, 0, 0, 0, 0, 13, 36 + 20)   # AIRIQ scan complete
+                + struct.pack("<IIHHII", 3, 20, 129, 0, 0x1000, 0x2000), addr=bytes(6))),
+    ether(event(179, struct.pack("<BxxxI", 1, 24) + struct.pack("<BxhIIBxH", 1, -70, 500, 400, 1, 0xd095),
+                addr=bytes(6))),                                         # LTE_U scan status
+    ether(event(179, struct.pack("<BxxxI", 3, 40) + struct.pack("<IIHHIHHI", 1, 32, 129, 0, 900, 3, 0xd095, 8)
+                + bytes(8), addr=bytes(6))),                             # LTE_U IQ capture
     ether(event(179, struct.pack("<BxxxI", 9, 8))),                      # LTE_U, unknown type: payload
     ether(event(172, bytes(30))),                                        # AIRIQ, length mismatch: payload
     ether(event(198, struct.pack("<HH", 256, 9) + bytes(2))),            # ANQP length overrun: payload

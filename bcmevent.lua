@@ -774,11 +774,53 @@ f.anqp_id = ProtoField.uint16("bcmevent.anqp.info_id", "ANQP Info ID", base.DEC,
 f.anqp_len = ProtoField.uint16("bcmevent.anqp.length", "ANQP Length", base.DEC)
 f.anqp_query = ProtoField.uint16("bcmevent.anqp.query_id", "Queried Info ID", base.DEC, ANQP_IDS)
 
-f.airiq_type = ProtoField.uint8("bcmevent.airiq.type", "AirIQ Event Type", base.DEC)
-f.airiq_seq = ProtoField.uint32("bcmevent.airiq.sequence", "Sequence", base.DEC)
+local AIRIQ_MSG_TYPES = {
+    [1]="IQDATA", [2]="FFTCPX", [3]="SCAN_COMPLETE", [4]="FFTCPX_VASIP", [5]="OL_DATA", [6]="OL_REBOOT"
+}
+local LTEU_TYPES = {[1]="SCAN_STATUS", [2]="SCAN_ABORT", [3]="IQ_CAPTURE"}
+f.airiq_type = ProtoField.uint8("bcmevent.airiq.type", "AirIQ Event Type", base.DEC,
+    {[1]="DATA", [2]="SCAN_COMPLETE"})
+f.airiq_scan_complete = ProtoField.uint32("bcmevent.airiq.scan_complete", "Scan Complete", base.DEC)
+f.airiq_scan_status = ProtoField.uint32("bcmevent.airiq.scan_status", "Scan Status", base.DEC,
+    {[0]="SUCCESS", [1]="ABORTED"})
+f.airiq_seq = ProtoField.uint32("bcmevent.airiq.sequence", "Packet Counter", base.DEC)
 f.airiq_len = ProtoField.uint32("bcmevent.airiq.length", "AirIQ Length", base.DEC)
-f.lteu_type = ProtoField.uint8("bcmevent.lte_u.type", "LTE-U Event Type", base.DEC)
+f.airiq_msg_type = ProtoField.uint32("bcmevent.airiq.msg.type", "Message Type", base.DEC, AIRIQ_MSG_TYPES)
+f.airiq_msg_size = ProtoField.uint32("bcmevent.airiq.msg.size", "Message Size", base.DEC)
+f.airiq_corerev = ProtoField.uint16("bcmevent.airiq.msg.corerev", "Core Revision", base.DEC)
+f.airiq_unit = ProtoField.uint16("bcmevent.airiq.msg.unit", "Unit", base.DEC)
+f.airiq_gain = ProtoField.uint16("bcmevent.airiq.fft.gaincode", "Gain Code", base.HEX)
+f.airiq_fc = ProtoField.uint16("bcmevent.airiq.fft.fc_mhz", "Center Frequency", base.UNIT_STRING, {" MHz"})
+f.airiq_chanspec = ProtoField.uint16("bcmevent.airiq.chanspec", "Chanspec", base.HEX)
+f.airiq_bins = ProtoField.uint16("bcmevent.airiq.fft.bins", "Bins", base.DEC)
+f.airiq_fft_seq = ProtoField.uint16("bcmevent.airiq.fft.seqno", "Sequence Number", base.DEC)
+f.airiq_fft_flags = ProtoField.uint16("bcmevent.airiq.fft.flags", "Flags", base.HEX)
+f.airiq_fft_interleaved = ProtoField.bool("bcmevent.airiq.fft.flags.interleaved", "Interleaved", 16, nil, 0x1)
+f.airiq_fft_last = ProtoField.bool("bcmevent.airiq.fft.flags.last", "Last", 16, nil, 0x2)
+f.airiq_ts = ProtoField.uint32("bcmevent.airiq.timestamp", "Timestamp", base.DEC)
+f.airiq_data_bytes = ProtoField.uint32("bcmevent.airiq.data_bytes", "Data Bytes", base.DEC)
+f.airiq_fc3 = ProtoField.uint16("bcmevent.airiq.fft.fc_3x3_mhz", "3x3 Center Frequency", base.UNIT_STRING, {" MHz"})
+f.airiq_samples = ProtoField.bytes("bcmevent.airiq.samples", "Samples")
+f.airiq_ifname = ProtoField.string("bcmevent.airiq.scan.ifname", "Interface")
+f.airiq_tsf_start = ProtoField.uint32("bcmevent.airiq.scan.tsf_start", "TSF Start", base.HEX)
+f.airiq_tsf_end = ProtoField.uint32("bcmevent.airiq.scan.tsf_end", "TSF End", base.HEX)
+f.airiq_iq_core = ProtoField.uint8("bcmevent.airiq.iq.core", "Core", base.DEC)
+f.airiq_iq_format = ProtoField.uint16("bcmevent.airiq.iq.format", "Format", base.HEX)
+f.airiq_iq_count = ProtoField.uint32("bcmevent.airiq.iq.sample_count", "Sample Count", base.DEC)
+f.lteu_type = ProtoField.uint8("bcmevent.lte_u.type", "LTE-U Event Type", base.DEC, LTEU_TYPES)
 f.lteu_len = ProtoField.uint32("bcmevent.lte_u.length", "LTE-U Length", base.DEC)
+f.lteu_present = ProtoField.uint8("bcmevent.lte_u.present", "LTE-U Present", base.DEC)
+f.lteu_rssi = ProtoField.int16("bcmevent.lte_u.rssi", "Smoothed RSSI", base.UNIT_STRING, {" dBm"})
+f.lteu_ts = ProtoField.uint32("bcmevent.lte_u.timestamp", "Timestamp", base.DEC)
+f.lteu_prev_ts = ProtoField.uint32("bcmevent.lte_u.prev_timestamp", "Previous Timestamp", base.DEC)
+f.lteu_active = ProtoField.uint8("bcmevent.lte_u.active", "Detection Active", base.DEC)
+f.lteu_chanspec = ProtoField.uint16("bcmevent.lte_u.chanspec", "Chanspec", base.HEX)
+f.lteu_abort = ProtoField.uint32("bcmevent.lte_u.abort_reason", "Abort Reason", base.DEC, {
+    [1]="CMD", [2]="WL_DOWN", [3]="SCAN_DISABLE", [4]="NOT_SUPPORTED", [5]="BW_CHANGED", [6]="FINISHED"
+})
+f.lteu_iq_type = ProtoField.uint32("bcmevent.lte_u.iq.message_type", "IQ Message", base.DEC,
+    {[1]="VASIP_IQEVT1", [2]="VASIP_IQEVT2"})
+f.lteu_iq_seq = ProtoField.uint16("bcmevent.lte_u.iq.seqno", "Sequence Number", base.DEC)
 
 -- wl_event_data_rssi_t, txdelay_event_t, health check reports, QoS management
 local AC_NAMES = {[0]="BE", [1]="BK", [2]="VI", [3]="VO"}
@@ -2164,32 +2206,115 @@ local function parse_anqp(tvb, off, len, tree)
     return "ANQP " .. table.concat(names, ", ")
 end
 
--- AirIQ: a header with the type first and the sequence and total length
--- last, then data. 32-bit firmware uses 36 bytes (sequence at 28, length at
--- 32); 64-bit drivers use 44 (sequence at 36, length at 40).
-local function parse_airiq(tvb, off, len, tree)
-    local h
-    if len >= 44 and tvb(off+40,4):le_uint() == len then h = 44
-    elseif len >= 36 and tvb(off+32,4):le_uint() == len then h = 36
-    else return nil end
-    local t = tree:add(tvb(off,len), "AirIQ Event")
-    t:add(f.airiq_type, tvb(off,1))
-    t:add_le(f.airiq_seq, tvb(off+h-8,4))
-    t:add_le(f.airiq_len, tvb(off+h-4,4))
-    if len > h then t:add(f.payload, tvb(off+h,len-h)) end
-    return string.format("type %u, seq %u", tvb(off,1):uint(), tvb(off+h-8,4):le_uint())
+-- AirIQ message (airiq_message_header_t and its type's header), then data
+local function parse_airiq_msg(tvb, p, n, tree)
+    if n < 12 then return nil end
+    local mtype = tvb(p,4):le_uint()
+    if not AIRIQ_MSG_TYPES[mtype] or tvb(p+4,4):le_uint() > n then return nil end
+    local mt = tree:add(tvb(p,n), "AirIQ Message: " .. AIRIQ_MSG_TYPES[mtype])
+    mt:add_le(f.airiq_msg_type, tvb(p,4))
+    mt:add_le(f.airiq_msg_size, tvb(p+4,4))
+    mt:add_le(f.airiq_corerev, tvb(p+8,2))
+    mt:add_le(f.airiq_unit, tvb(p+10,2))
+    local body = p + 12
+    if (mtype == 2 or mtype == 4) and n >= 40 then        -- airiq_fftdata_header_t
+        mt:add_le(f.airiq_gain, tvb(p+12,2))
+        mt:add_le(f.airiq_fc, tvb(p+14,2))
+        add_chanspec(mt, f.airiq_chanspec, tvb(p+16,2), true)
+        mt:add_le(f.airiq_bins, tvb(p+18,2))
+        mt:add_le(f.airiq_fft_seq, tvb(p+20,2))
+        local fl = mt:add_le(f.airiq_fft_flags, tvb(p+22,2))
+        fl:add_le(f.airiq_fft_interleaved, tvb(p+22,2))
+        fl:add_le(f.airiq_fft_last, tvb(p+22,2))
+        mt:add_le(f.airiq_ts, tvb(p+24,4))
+        mt:add_le(f.airiq_data_bytes, tvb(p+28,4))
+        mt:add_le(f.airiq_fc3, tvb(p+32,2))
+        body = p + 40
+    elseif mtype == 3 and (n == 20 or n == 36) then       -- airiq_scan_complete_t
+        if n == 36 then
+            mt:add(f.airiq_ifname, tvb(p+12,16), trim_nul(tvb(p+12,16):string()))
+            body = p + 28
+        end
+        mt:add_le(f.airiq_tsf_start, tvb(body,4))
+        mt:add_le(f.airiq_tsf_end, tvb(body+4,4))
+        body = body + 8
+    elseif mtype == 1 and n >= 48 then                    -- airiq_iqdata_header_t, main fields
+        mt:add(f.airiq_iq_core, tvb(p+14,1))
+        mt:add_le(f.airiq_iq_format, tvb(p+16,2))
+        mt:add_le(f.airiq_fc, tvb(p+22,2))
+        mt:add_le(f.airiq_ts, tvb(p+30,4))
+        mt:add_le(f.airiq_iq_count, tvb(p+34,4))
+        mt:add_le(f.airiq_data_bytes, tvb(p+38,4))
+        body = p + n
+    end
+    if body < p + n then mt:add(f.airiq_samples, tvb(body,p+n-body)) end
+    return AIRIQ_MSG_TYPES[mtype]
 end
 
--- LTE-U: type, total length at 4, then data
+-- airiq_event_t: type, scan_complete[] and scan_status[] for each radio,
+-- packet counter, total length, then data. Three radios make a 36-byte
+-- header, four a 44-byte one.
+local function parse_airiq(tvb, off, len, tree)
+    local radios
+    if len >= 44 and tvb(off+40,4):le_uint() == len then radios = 4
+    elseif len >= 36 and tvb(off+32,4):le_uint() == len then radios = 3
+    else return nil end
+    local h = 12 + 8 * radios
+    local typ = tvb(off,1):uint()
+    local t = tree:add(tvb(off,len), "AirIQ Event")
+    t:add(f.airiq_type, tvb(off,1))
+    for r = 0, radios - 1 do
+        local rt = t:add(tvb(off+4+4*r,4), "Radio " .. r)
+        rt:add_le(f.airiq_scan_complete, tvb(off+4+4*r,4))
+        rt:add_le(f.airiq_scan_status, tvb(off+4+4*radios+4*r,4))
+    end
+    t:add_le(f.airiq_seq, tvb(off+h-8,4))
+    t:add_le(f.airiq_len, tvb(off+h-4,4))
+    local s = ({[1]="data", [2]="scan complete"})[typ] or ("type " .. typ)
+    if len > h then
+        local m = parse_airiq_msg(tvb, off + h, len - h, t)
+        if m then s = s .. ", " .. m else t:add(f.payload, tvb(off+h,len-h)) end
+    end
+    return s .. ", packet " .. tvb(off+h-8,4):le_uint()
+end
+
+-- lte_u_event_t: type, total length, then the type's data
 local function parse_lteu(tvb, off, len, tree)
     if len < 8 or tvb(off+4,4):le_uint() ~= len then return nil end
     local typ = tvb(off,1):uint()
-    if typ < 1 or typ > 3 or tvb(off+1,3):uint() ~= 0 then return nil end
+    if not LTEU_TYPES[typ] or tvb(off+1,3):uint() ~= 0 then return nil end
     local t = tree:add(tvb(off,len), "LTE-U Event")
     t:add(f.lteu_type, tvb(off,1))
     t:add_le(f.lteu_len, tvb(off+4,4))
-    if len > 8 then t:add(f.payload, tvb(off+8,len-8)) end
-    return "type " .. tvb(off,1):uint()
+    local p, n = off + 8, len - 8
+    local s = LTEU_TYPES[typ]
+    if typ == 1 and n >= 16 then                          -- lte_u_scan_status_t
+        t:add(f.lteu_present, tvb(p,1))
+        t:add_le(f.lteu_rssi, tvb(p+2,2))
+        t:add_le(f.lteu_ts, tvb(p+4,4))
+        t:add_le(f.lteu_prev_ts, tvb(p+8,4))
+        t:add(f.lteu_active, tvb(p+12,1))
+        local _, c = add_chanspec(t, f.lteu_chanspec, tvb(p+14,2), true)
+        s = s .. (tvb(p,1):uint() ~= 0 and ", LTE-U present" or ", not present")
+        if c then s = s .. ", " .. chanspec_text(c) end
+        p, n = p + 16, n - 16
+    elseif typ == 2 and n >= 4 then
+        t:add_le(f.lteu_abort, tvb(p,4))
+        p, n = p + 4, n - 4
+    elseif typ == 3 and n >= 24 then                      -- lte_u_iqdata_header_t
+        t:add_le(f.lteu_iq_type, tvb(p,4))
+        t:add_le(f.airiq_msg_size, tvb(p+4,4))
+        t:add_le(f.airiq_corerev, tvb(p+8,2))
+        t:add_le(f.airiq_unit, tvb(p+10,2))
+        t:add_le(f.lteu_ts, tvb(p+12,4))
+        t:add_le(f.lteu_iq_seq, tvb(p+16,2))
+        add_chanspec(t, f.lteu_chanspec, tvb(p+18,2), true)
+        t:add_le(f.airiq_data_bytes, tvb(p+20,4))
+        p, n = p + 24, n - 24
+        if n > 0 then t:add(f.airiq_samples, tvb(p,n)) n = 0 end
+    end
+    if n > 0 then t:add(f.payload, tvb(p,n)) end
+    return s
 end
 
 -- LINK: an element when present (the RSN IE for WDS links)
