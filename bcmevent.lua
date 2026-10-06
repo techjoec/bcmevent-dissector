@@ -732,10 +732,11 @@ f.fbt_type = ProtoField.uint16("bcmevent.fbt.type", "FBT Event Type", base.DEC,
 f.fbt_data_offset = ProtoField.uint16("bcmevent.fbt.data_offset", "Data Offset", base.DEC)
 f.mbo_version = ProtoField.uint16("bcmevent.mbo.version", "MBO Status Version", base.DEC)
 f.mbo_length = ProtoField.uint16("bcmevent.mbo.length", "MBO Status Length", base.DEC)
-f.mbo_disallowed = ProtoField.uint8("bcmevent.mbo.assoc_disallowed", "Association Disallowed", base.DEC,
-    MBO_DISALLOW_REASONS)
-f.mbo_ap_cap = ProtoField.uint8("bcmevent.mbo.ap_capability", "AP Capability", base.HEX)
-f.mbo_enabled = ProtoField.uint8("bcmevent.mbo.enabled", "MBO Enabled", base.DEC)
+f.mbo_disallowed = ProtoField.uint8("bcmevent.mbo.assoc_disallowed",
+    "Association Disallowed Reason (0 = allowed)", base.DEC, MBO_DISALLOW_REASONS)
+f.mbo_ap_cap = ProtoField.uint8("bcmevent.mbo.ap_capability", "AP Capability Indication", base.HEX)
+f.mbo_cell_aware = ProtoField.bool("bcmevent.mbo.ap_capability.cellular_aware", "Cellular Data Aware", 8, nil, 0x40)
+f.mbo_enabled = ProtoField.bool("bcmevent.mbo.enabled", "MBO Enabled", 8, nil, 0x01)
 f.anqp_id = ProtoField.uint16("bcmevent.anqp.info_id", "ANQP Info ID", base.DEC, ANQP_IDS)
 f.anqp_len = ProtoField.uint16("bcmevent.anqp.length", "ANQP Length", base.DEC)
 f.anqp_query = ProtoField.uint16("bcmevent.anqp.query_id", "Queried Info ID", base.DEC, ANQP_IDS)
@@ -2006,10 +2007,13 @@ local function parse_mbo_status(tvb, off, len, tree)
     t:add_le(f.mbo_version, tvb(off,2))
     t:add_le(f.mbo_length, tvb(off+2,2))
     t:add(f.mbo_disallowed, tvb(off+4,1))
-    t:add(f.mbo_ap_cap, tvb(off+5,1))
+    t:add(f.mbo_ap_cap, tvb(off+5,1)):add(f.mbo_cell_aware, tvb(off+5,1))
     t:add(f.mbo_enabled, tvb(off+6,1))
     local r = tvb(off+4,1):uint()
-    return r == 0 and "association allowed" or ("association disallowed: " .. (MBO_DISALLOW_REASONS[r] or r))
+    local s = {has_bit(tvb(off+6,1):uint(), 1) and "MBO enabled" or "MBO disabled"}
+    s[2] = r == 0 and "accepting associations" or ("disallowed: " .. (MBO_DISALLOW_REASONS[r] or r))
+    if has_bit(tvb(off+5,1):uint(), 0x40) then s[3] = "cellular aware" end
+    return table.concat(s, ", ")
 end
 
 -- ANQP elements: info ID and length (little-endian), then the payload
