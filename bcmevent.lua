@@ -862,6 +862,10 @@ f.hc_bssidx = ProtoField.uint8("bcmevent.health.bssidx", "BSS Index", base.DEC)
 f.hc_addr = ProtoField.ether("bcmevent.health.addr", "Address")
 f.qos_enabled = ProtoField.uint8("bcmevent.qos_mgmt.enabled", "Enabled", base.DEC)
 
+-- mld_link_info_t (WLC_E_MLD_UP)
+f.mld_unit = ProtoField.int8("bcmevent.mld.unit", "MLD Unit", base.DEC)
+f.mld_link_id = ProtoField.int8("bcmevent.mld.link_id", "Link ID", base.DEC)
+
 -- bcm_dngl_event_msg_t
 f.dngl_version = ProtoField.uint16("bcmevent.dngl.version", "Dongle Event Version", base.DEC)
 f.dngl_type = ProtoField.uint16("bcmevent.dngl.type", "Dongle Event Type", base.DEC, DNGL_EVENT_NAMES)
@@ -2427,8 +2431,19 @@ local function parse_qos_mgmt(tvb, off, len, tree, reason)
     return parse_frame_or_action(tvb, off, len, tree)
 end
 
+-- mld_link_info_t: two signed bytes, read that way by the host handler.
+-- Other lengths come from senders that number events differently.
+local function parse_mld_up(tvb, off, len, tree)
+    if len ~= 2 then return nil end
+    local t = tree:add(tvb(off,2), "MLD Link Info")
+    t:add(f.mld_unit, tvb(off,1))
+    t:add(f.mld_link_id, tvb(off+1,1))
+    return string.format("MLD unit %d, link %d", tvb(off,1):int(), tvb(off+1,1):int())
+end
+
 -- Fixed structures, by HND event number
 local DATA_PARSERS = {
+    [210] = parse_mld_up,
     [16] = parse_link_ies, [25] = parse_eapol_msg, [56] = parse_rssi, [95] = parse_txdelay,
     [207] = parse_qos_mgmt, [208] = parse_health,
     [172] = parse_airiq, [179] = parse_lteu, [214] = parse_airiq,

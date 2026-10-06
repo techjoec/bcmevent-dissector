@@ -259,6 +259,9 @@ frames = [
     ether(event(207, bytes([19, 4, 1]), reason=3)),                      # QOS_MGMT, MSCS action
     ether(event(208, struct.pack("<HHHHHH", 0xc003, 20, 0x0104, 16, 1, 9) + bytes([3, 2, 0]) + STA + bytes(3),
                 addr=bytes(6))),                                         # HEALTH_CHECK, TX stall
+    ether(event(210, bytes([1, 2]), addr=AP)),                           # MLD_UP
+    ether(event(210, bytes([0xff, 3]), addr=AP)),                        # MLD_UP, signed unit
+    ether(event(210, bytes(39))),                                        # 210 from another sender: payload
     ether(event(209, bytes(20))),                                        # DHD CSI_DATA: stays payload
     ether(event(202, bytes(40))),                                        # DHD PFN_PARTIAL_RESULT: payload
 ]

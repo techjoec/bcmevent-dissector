@@ -56,6 +56,7 @@ dissector.
 - EAPOL frames (handed to Wireshark's EAPOL dissector), RSSI, TX delay
   statistics, health-check alerts, QoS management and the link RSN element
 - 802.11 BSS transition query, request and response bodies in action frames
+- MLD up events (MLD unit and link ID)
 
 Event data with no public layout is shown as `bcmevent.payload`.
 

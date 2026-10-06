@@ -71,3 +71,7 @@ bcmevent.airiq.type == 2 && bcmevent.airiq.scan_complete == 1 && bcmevent.airiq.
 bcmevent.lte_u.abort_reason == 4
 bcmevent.lte_u.present == 1 && bcmevent.lte_u.rssi == -70 && bcmevent.lte_u.chanspec == 0xd095
 bcmevent.lte_u.iq.message_type == 1 && bcmevent.lte_u.iq.seqno == 3 && bcmevent.airiq.samples
+bcmevent.event.type == 210 && bcmevent.mld.unit == 1 && bcmevent.mld.link_id == 2
+bcmevent.mld.unit == -1 && bcmevent.mld.link_id == 3
+bcmevent.event.type == 210 && bcmevent.event.data_len == 39 && bcmevent.payload
+none: bcmevent.event.type == 210 && bcmevent.event.data_len == 39 && bcmevent.mld.unit
