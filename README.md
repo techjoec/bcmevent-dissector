@@ -101,6 +101,10 @@ python3 test/make-sample.py             # rebuilds test/sample.pcap
 `test/expect.txt` lists display filters the sample must match (or, marked
 `none:`, must not), which pins decoded values.
 
+## Changes
+
+See [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 GPL-2.0-or-later

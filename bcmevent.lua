@@ -10,7 +10,7 @@
 -- fweh.h in brcmfmac. Not affiliated with Broadcom.
 
 set_plugin_info({
-    version = "1.0.0",
+    version = "1.1.0",
     description = "Broadcom Wi-Fi firmware event dissector (EtherType 0x886c)",
     author = "techjoec",
     repository = "https://github.com/techjoec/bcmevent-dissector"
