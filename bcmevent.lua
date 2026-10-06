@@ -2375,7 +2375,7 @@ local function parse_airiq_msg(tvb, p, n, tree)
             body = p + n
         end
     end
-    if body < p + n then mt:add(f.airiq_samples, tvb(body,p+n-body)) end
+    if body < p + n then mt:add(f.payload, tvb(body,p+n-body)) end
     return AIRIQ_MSG_TYPES[mtype]
 end
 
@@ -2618,13 +2618,17 @@ local function dissect_data(tvb, etype, reason, off, len, tree, pinfo)
 
     elseif etype == 61 or etype == 62 then              -- PRE_ASSOC_IND, PRE_REASSOC_IND
         local rh = parse_rxmeta(tvb, off, len, tree)
+        -- the request body; a reassociation request adds the current AP
+        local fixed = etype == 62 and 10 or 4
         if rh == 0 then
             tree:add(f.payload, tvb(off,len))
-        elseif len >= rh + 4 then
-            local at = tree:add(tvb(off+rh,len-rh), "802.11 Association Request Body")
+        elseif len >= rh + fixed then
+            local at = tree:add(tvb(off+rh,len-rh), etype == 62 and "802.11 Reassociation Request Body"
+                or "802.11 Association Request Body")
             at:add_le(f.assoc_cap, tvb(off+rh,2))
             at:add_le(f.assoc_listen, tvb(off+rh+2,2))
-            parse_ies(tvb, off + rh + 4, len - rh - 4, at)
+            if etype == 62 then at:add(f.assoc_current_ap, tvb(off+rh+4,6)) end
+            parse_ies(tvb, off + rh + fixed, len - rh - fixed, at)
         elseif len > rh then
             tree:add(f.payload, tvb(off+rh,len-rh))
         end

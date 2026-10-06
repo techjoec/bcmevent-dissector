@@ -88,3 +88,25 @@ bcmevent.mgmt.action.category == 11 && !bcmevent.mgmt.btm.query_reason
 bcmevent.mgmt.action.category == 26
 bcmevent.airiq.msg.type == 1 && bcmevent.airiq.timestamp == 777 && bcmevent.airiq.iq.sample_count == 2 && bcmevent.airiq.samples == 00:01:02:03:04:05:06:07
 bcmevent.airiq.sequence == 21 && bcmevent.airiq.samples == 00:01:02:03:04:05:06:07 && bcmevent.payload == aa:bb
+bcmevent.event.type == 10 && bcmevent.ie.ssid == "example"
+bcmevent.event.type == 11 && bcmevent.mgmt.reason == 8
+bcmevent.event.type == 62 && bcmevent.mgmt.assoc.current_ap == 02:00:00:00:00:03 && bcmevent.ie.ssid == "example"
+bcmevent.event.type == 72 && bcmevent.rxmeta.version == 2 && bcmevent.mgmt.subtype == 4
+bcmevent.event.type == 87 && bcmevent.ie.ssid == "example"
+bcmevent.event.type == 88 && bcmevent.ie.id == 221
+bcmevent.cca.id == 2 && bcmevent.cca.noise == -95
+bcmevent.event.type == 124 && bcmevent.payload && !bcmevent.cca.id
+bcmevent.airiq.scan.ifname == "wl0" && bcmevent.airiq.scan.tsf_end == 0x4000
+bcmevent.airiq.msg.type == 4 && bcmevent.airiq.fft.fc_3x3_mhz == 5190 && bcmevent.airiq.samples
+bcmevent.airiq.msg.type == 5 && bcmevent.payload && !bcmevent.airiq.samples
+bcmevent.event.type == 207 && bcmevent.event.reason == 9 && bcmevent.qos_mgmt.enabled == 0
+bcmevent.health.module == 9 && bcmevent.health.stall_module == 3 && bcmevent.health.stall_type == 1
+bcmevent.mgmt.btm.request_mode.bss_term && bcmevent.mgmt.btm.term_duration && bcmevent.mgmt.btm.session_url == "https"
+bcmevent.mgmt.btm.status == 7 && !bcmevent.mgmt.btm.target_bssid
+bcmevent.mgmt.wnm.notification_type == 2 && bcmevent.payload && !bcmevent.mgmt.wnm.wfa.subtype
+bcmevent.mgmt.wnm.wfa.subtype == 0 && bcmevent.mgmt.wnm.wfa.url == "https" && bcmevent.mgmt.wnm.wfa.osu_method == 1
+bcmevent.mgmt.wnm.wfa.subtype == 4 && bcmevent.mgmt.wnm.wfa.url == "t&c"
+bcmevent.mgmt.action.category == 126 && bcmevent.mgmt.action.oui == 00:50:f2 && !bcmevent.mgmt.action.code
+bcmevent.event.type == 7 && bcmevent.mgmt.assoc.listen_interval == 10 && !bcmevent.mgmt.assoc.status
+bcmevent.mgmt.auth.algorithm == 3 && bcmevent.payload
+bcmevent.fbt.type == 1 && bcmevent.mgmt.action.category == 6

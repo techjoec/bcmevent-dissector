@@ -287,6 +287,37 @@ frames = [
     ether(event(172, struct.pack("<Bxxx3I3III", 1, 0, 0, 0, 0, 0, 0, 22, 36 + 48)                        # FFT declares more than sent
                 + struct.pack("<IIHHhHHHHHIIH6x", 2, 48, 129, 0, 0x0310, 2437, 0x1006, 64, 7, 0, 1000, 64, 0)
                 + bytes(8), addr=bytes(6)), src=BAD),
+    # event numbers that share a decoder with another event
+    ether(event(10, ie(0, b"example") + rsn([2]))),                      # REASSOC_IND, elements
+    ether(event(11, struct.pack("<H", 8), reason=8)),                    # DISASSOC, frame body
+    ether(event(62, rxmeta_v1(0x1006) + struct.pack("<HH", 0x0431, 10) + AP + ie(0, b"example"))),  # PRE_REASSOC_IND
+    ether(event(72, rxmeta_v2(0x1006) + mgmt(4, ie(0, b"") + ie(1, b"\x82"), da=b"\xff" * 6))),  # P2P_PROBREQ_MSG
+    ether(event(87, ie(0, b"example") + ie(1, b"\x82\x84"))),            # ASSOC_REQ_IE
+    ether(event(88, ie(1, b"\x82\x84") + ie(221, b"\x00\x50\xf2\x02\x01\x01\x00"))),  # ASSOC_RESP_IE
+    # decoder variants
+    ether(event(124, struct.pack("<HHHHi", 0, 2, 0x1006, 4, -95), addr=bytes(6))),  # CCA, NF_LTE
+    ether(event(124, struct.pack("<HHHH", 0, 7, 0x1006, 4) + bytes(4), addr=bytes(6))),  # CCA, unknown id: raw
+    ether(event(172, struct.pack("<Bxxx3I3III", 1, 0, 0, 0, 0, 0, 0, 30, 36 + 36)                         # AIRIQ scan complete with ifname
+                + struct.pack("<IIHH", 3, 36, 129, 0) + b"wl0".ljust(16, b"\0") + struct.pack("<II", 0x3000, 0x4000),
+                addr=bytes(6))),
+    ether(event(172, struct.pack("<Bxxx3I3III", 1, 0, 0, 0, 0, 0, 0, 31, 36 + 48)                         # AIRIQ FFTCPX_VASIP
+                + struct.pack("<IIHHhHHHHHIIH6x", 4, 48, 129, 0, 0x0310, 5180, 0xd024, 64, 8, 2, 2000, 8, 5190)
+                + bytes(range(8)), addr=bytes(6))),
+    ether(event(172, struct.pack("<Bxxx3I3III", 1, 0, 0, 0, 0, 0, 0, 32, 36 + 20)                         # AIRIQ offload data: raw
+                + struct.pack("<IIHH", 5, 20, 129, 0) + bytes(8), addr=bytes(6))),
+    ether(event(207, b"\x00", reason=9)),                                # QOS_MGMT, ASR disabled
+    ether(event(208, struct.pack("<HHHHHH", 0xc003, 12, 0xff09, 8, 1, 4) + bytes([1, 2, 3, 1]),
+                addr=bytes(6))),                                         # HEALTH_CHECK, sounding
+    ether(event(191, bytes([10, 7, 9, 0x0c]) + struct.pack("<HB", 0, 5) + bytes(12) + b"\x05https"
+                + ie(52, AP + bytes(7)))),                               # BTM request, termination and URL
+    ether(event(156, bytes([10, 8, 10, 7, 0]))),                         # BTM response, reject
+    ether(event(196, bytes([10, 26, 11, 2]) + bytes(3))),                # WNM notification, beacon protection
+    ether(event(196, bytes([10, 26, 12, 1]) + ie(221, b"\x50\x6f\x9a\x00\x05https\x01")
+                + ie(221, b"\x50\x6f\x9a\x04\x03t&c"))),                # HS2.0 remediation, T&C
+    ether(event(59, bytes([126, 0x00, 0x50, 0xf2, 9, 9]))),              # protected vendor-specific action
+    ether(event(7, struct.pack("<HH", 0x0431, 10) + ie(0, b"x"))),       # ASSOC, request body
+    ether(event(188, struct.pack("<HHH", 3, 1, 0) + bytes(32))),         # ASSOC_FAIL, SAE auth body
+    ether(event(166, struct.pack("<HHHH", 1, 22, 1, 8) + bytes([6, 1]) + STA + AP + bytes(2))),  # FBT over the DS
     ether(event(209, bytes(20))),                                        # DHD CSI_DATA: stays payload
     ether(event(202, bytes(40))),                                        # DHD PFN_PARTIAL_RESULT: payload
 ]
