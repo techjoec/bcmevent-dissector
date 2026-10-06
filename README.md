@@ -26,6 +26,11 @@ Wireshark or use **Analyze > Reload Lua Plugins** (Ctrl+Shift+L).
 
 Remove any **Decode As** rule for EtherType `0x886c`. It overrides this plugin.
 
+Linux hosts hand AirIQ events to the network stack with protocol `0x88b7`, so
+cooked captures show them there. The plugin claims Broadcom events under
+`0x88b7` and passes everything else to Wireshark's IEEE 802 OUI Extended
+dissector.
+
 ## Decodes
 
 - `bcmeth_hdr_t` and `wl_event_msg_t`: event, status, reason, flags, station,
@@ -87,6 +92,8 @@ python3 test/make-sample.py             # rebuilds test/sample.pcap
 ```
 
 `test/sample.pcap` is synthetic, with frames for every decoder.
+`test/expect.txt` lists display filters the sample must match (or, marked
+`none:`, must not), which pins decoded values.
 
 ## License
 

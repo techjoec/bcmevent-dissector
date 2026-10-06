@@ -1,0 +1,52 @@
+# Display filters for test/sample.pcap, checked by test/check.sh.
+# Each must match at least one frame; "none:" lines must match none.
+bcmevent.csa.mode == 0
+bcmevent.csa.chanspec == 0xe02a && bcmevent.csa.count == 5
+bcmevent.csa.recv.chanspec_valid == 1 && bcmevent.csa.chanspec == 0xe06a
+bcmevent.cca.congest == 250 && bcmevent.cca.duration == 1000
+bcmevent.cca.congest_obss == 300 && bcmevent.cca.xxobss == 7
+bcmevent.cca.noise == -92
+bcmevent.dpsta.intf_type == 2
+bcmevent.rrm.category == 5 && bcmevent.rrm.subevent == 1
+bcmevent.radar.target_chanspec == 0xe02a && bcmevent.radar.min_pri == 1428
+bcmevent.modesw.flags.state == 2 && bcmevent.modesw.reason == 3
+bcmevent.trf_thold.type == 1 && bcmevent.trf_thold.count == 10
+bcmevent.bw_upgrade.chanspec == 0xe832
+bcmevent.ext_auth.ssid == "example" && bcmevent.ext_auth.key_mgmt_suite == 0x000fac08
+bcmevent.ext_auth.mld_addr == 02:00:00:00:00:02
+bcmevent.omnm.mod == 1 && bcmevent.omnm.lock_life == 30
+bcmevent.color.own == 5 && bcmevent.color.collision == 1
+bcmevent.edcrs.type == 1 && bcmevent.edcrs.status == 1
+bcmevent.pmkid_cand.bssid == 02:00:00:00:00:03 && bcmevent.pmkid_cand.preauth == 1
+bcmevent.event.type == 12 && bcmevent.mgmt.reason == 8
+bcmevent.event.type == 6 && bcmevent.ie.id == 76
+bcmevent.addts.ts_delay == 30
+bcmevent.country_code == "US"
+bcmevent.fifo_credit.ac0 == 8 && bcmevent.fifo_credit.bcmc == 1
+bcmevent.credit_borrow.allowed == 1
+bcmevent.bssid.fbt_key
+bcmevent.pm_mode == 2
+bcmevent.event.type == 199 && bcmevent.pm_mode == 0
+bcmevent.band == 2
+bcmevent.ssid == "example"
+bcmevent.mgmt.assoc.status == 0 && bcmevent.mgmt.assoc.aid == 0xc001
+bcmevent.mgmt.assoc.current_ap == 02:00:00:00:00:03
+bcmevent.scan_results.count == 1 && bcmevent.bss.ssid == "example"
+bcmevent.action_frame.packet_id == 0x1234
+bcmevent.event.type == 191 && bcmevent.mgmt.action.category == 10
+bcmevent.fbt.type == 2 && bcmevent.mgmt.auth.algorithm == 2
+bcmevent.event.type == 188 && bcmevent.mgmt.auth.sequence == 1
+bcmevent.mbo.assoc_disallowed == 3 && bcmevent.mbo.ap_capability.cellular_aware
+bcmevent.anqp.query_id == 263
+bcmevent.event.type == 200 && bcmevent.rxmeta.version == 2 && bcmevent.ie.id == 1
+bcmevent.event.type == 149 && bcmevent.ie.id == 45
+bcmevent.airiq.sequence == 7 && bcmevent.airiq.length == 40
+bcmevent.airiq.sequence == 9 && bcmevent.airiq.length == 48
+eth.type == 0x88b7 && bcmevent.airiq.sequence == 11
+eth.type == 0x88b7 && !bcmevent
+bcmevent.event.type == 214 && bcmevent.airiq.type == 3
+bcmevent.lte_u.type == 2 && bcmevent.lte_u.length == 12
+none: bcmevent.lte_u.type == 9
+none: bcmevent.event.type == 209 && bcmevent.event.data_len == 20 && bcmevent.csa.recv.version
+none: bcmevent.event.type == 202 && bcmevent.event.data_len == 40 && bcmevent.color.own
+bcmevent.event.type == 172 && !bcmevent.airiq.type && bcmevent.payload

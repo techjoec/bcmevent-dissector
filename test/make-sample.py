@@ -31,9 +31,9 @@ def event(etype, data=b"", status=0, reason=0, flags=0, addr=STA, version=2, dat
     return bcmeth(1, msg + data + b"\0\0")
 
 
-def ether(payload, vlan=None, src=HOST):
+def ether(payload, vlan=None, src=HOST, etype=0x886c):
     tag = struct.pack(">HH", 0x8100, vlan) if vlan is not None else b""
-    return HOST + src + tag + b"\x88\x6c" + payload
+    return HOST + src + tag + struct.pack(">H", etype) + payload
 
 
 def ie(eid, body):
@@ -227,6 +227,13 @@ frames = [
     ether(event(172, b"\x01" + bytes(27) + struct.pack("<II", 7, 40) + b"\x05\x06\x07\x08",
                 addr=bytes(6))),                                         # AIRIQ_EVENT
     ether(event(179, struct.pack("<BxxxI", 2, 12) + struct.pack("<I", 4), addr=bytes(6))),  # LTE_U_EVENT
+    ether(event(172, b"\x02" + bytes(35) + struct.pack("<II", 9, 48) + b"\x05\x06\x07\x08",
+                addr=bytes(6))),                                         # AIRIQ_EVENT, 64-bit header
+    ether(event(172, b"\x01" + bytes(27) + struct.pack("<II", 11, 40) + bytes(4), addr=bytes(6)),
+          etype=0x88b7),                                                 # AIRIQ_EVENT as 0x88b7
+    ether(b"\x00\x00\x00\x00\x01" + bytes(20), etype=0x88b7),             # other 0x88b7: OUI Extended
+    ether(event(214, b"\x03" + bytes(27) + struct.pack("<II", 1, 36), addr=bytes(6))),  # DHD AIRIQ_EVENT
+    ether(event(179, struct.pack("<BxxxI", 9, 8))),                      # LTE_U, unknown type: payload
     ether(event(172, bytes(30))),                                        # AIRIQ, length mismatch: payload
     ether(event(198, struct.pack("<HH", 256, 9) + bytes(2))),            # ANQP length overrun: payload
     ether(event(209, bytes(20))),                                        # DHD CSI_DATA: stays payload

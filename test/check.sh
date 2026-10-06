@@ -49,5 +49,19 @@ if [ $# -eq 0 ]; then
     [ "$(count "$mark && !$flag")" -eq 0 ] || { echo "FAIL: not flagged:"; frames "$mark && !$flag"; fail=1; }
     [ "$(count "!($mark) && $flag")" -eq 0 ] || { echo "FAIL: flagged:"; frames "!($mark) && $flag"; fail=1; }
 fi
+# Decoded values in test/sample.pcap
+if [ $# -eq 0 ]; then
+    grep -v '^#' "$here/expect.txt" | while IFS= read -r want; do
+        [ -n "$want" ] || continue
+        filter=${want#none: }
+        n=$(count "$filter" 2>/dev/null) || n=bad
+        case $n in
+        ''|*[!0-9]*) echo "FAIL: bad filter: $filter" ;;
+        *) if [ "$filter" != "$want" ]; then [ "$n" -eq 0 ] || echo "FAIL: matched: $filter"
+           else [ "$n" -gt 0 ] || echo "FAIL: no match: $filter"; fi ;;
+        esac
+    done > "$tmp/expect"
+    [ ! -s "$tmp/expect" ] || { cat "$tmp/expect"; fail=1; }
+fi
 [ "$fail" -eq 0 ] && echo PASS
 exit "$fail"

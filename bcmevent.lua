@@ -2040,22 +2040,27 @@ local function parse_anqp(tvb, off, len, tree)
     return "ANQP " .. table.concat(names, ", ")
 end
 
--- AirIQ: a 36-byte header (type, sequence at 28, length at 32), then data
+-- AirIQ: a header with the type first and the sequence and total length
+-- last, then data. 32-bit firmware uses 36 bytes (sequence at 28, length at
+-- 32); 64-bit drivers use 44 (sequence at 36, length at 40).
 local function parse_airiq(tvb, off, len, tree)
-    if len < 36 then return nil end
-    local n = tvb(off+32,4):le_uint()
-    if n ~= len and n + 36 ~= len then return nil end
+    local h
+    if len >= 44 and tvb(off+40,4):le_uint() == len then h = 44
+    elseif len >= 36 and tvb(off+32,4):le_uint() == len then h = 36
+    else return nil end
     local t = tree:add(tvb(off,len), "AirIQ Event")
     t:add(f.airiq_type, tvb(off,1))
-    t:add_le(f.airiq_seq, tvb(off+28,4))
-    t:add_le(f.airiq_len, tvb(off+32,4))
-    if len > 36 then t:add(f.payload, tvb(off+36,len-36)) end
-    return string.format("type %u, seq %u", tvb(off,1):uint(), tvb(off+28,4):le_uint())
+    t:add_le(f.airiq_seq, tvb(off+h-8,4))
+    t:add_le(f.airiq_len, tvb(off+h-4,4))
+    if len > h then t:add(f.payload, tvb(off+h,len-h)) end
+    return string.format("type %u, seq %u", tvb(off,1):uint(), tvb(off+h-8,4):le_uint())
 end
 
 -- LTE-U: type, total length at 4, then data
 local function parse_lteu(tvb, off, len, tree)
     if len < 8 or tvb(off+4,4):le_uint() ~= len then return nil end
+    local typ = tvb(off,1):uint()
+    if typ < 1 or typ > 3 or tvb(off+1,3):uint() ~= 0 then return nil end
     local t = tree:add(tvb(off,len), "LTE-U Event")
     t:add(f.lteu_type, tvb(off,1))
     t:add_le(f.lteu_len, tvb(off+4,4))
@@ -2065,7 +2070,7 @@ end
 
 -- Fixed structures, by HND event number
 local DATA_PARSERS = {
-    [172] = parse_airiq, [179] = parse_lteu,
+    [172] = parse_airiq, [179] = parse_lteu, [214] = parse_airiq,
     [0] = parse_ssid, [7] = parse_assoc_body, [9] = parse_assoc_body, [26] = parse_scan_complete,
     [60] = parse_af_complete, [149] = parse_assoc_ies, [156] = parse_wnm,
     [166] = parse_fbt, [187] = parse_frame_or_action, [188] = parse_auth_body,
@@ -2191,13 +2196,22 @@ local function dissect_dongle_event(tvb, root)
     return DNGL_EVENT_NAMES[dtype] or ("type " .. dtype)
 end
 
+-- Ethertypes registered on top of another dissector, which gets back
+-- anything that is not a Broadcom event
+local HANDBACK = {}
+
 -- Called from the ethertype table, so 802.1Q/QinQ tags are already stripped
--- and the tvb starts at the 0x886c payload. A Decode As rule for 0x886c
--- outranks this registration.
+-- and the tvb starts at the 0x886c (or 0x88b7) payload. A Decode As rule for
+-- either outranks this registration.
 function bcm.dissector(tvb, pinfo, tree)
     -- bcmeth_hdr_t starts with BCMILCP_SUBTYPE_VENDOR_LONG and the Broadcom
-    -- OUI. Anything else goes to Wireshark's data dissector.
-    if tvb:len() < 10 or tvb(0,2):uint() ~= 0x8001 or tvb(5,3):uint() ~= 0x001018 then return 0 end
+    -- OUI. Anything else goes back to the ethertype's own dissector, or to
+    -- Wireshark's data dissector.
+    if tvb:len() < 10 or tvb(0,2):uint() ~= 0x8001 or tvb(5,3):uint() ~= 0x001018 then
+        local other = HANDBACK[pinfo.match_uint]
+        if other then return other:call(tvb, pinfo, tree) end
+        return 0
+    end
     cut = tvb:reported_len() > tvb:len()
 
     pinfo.cols.protocol = "BCMEVENT"
@@ -2295,4 +2309,9 @@ function bcm.dissector(tvb, pinfo, tree)
     return tvb:len()
 end
 
-DissectorTable.get("ethertype"):add(0x886c, bcm)
+local ethertype = DissectorTable.get("ethertype")
+ethertype:add(0x886c, bcm)
+-- Linux hosts hand AirIQ events to the stack with protocol 0x88b7 (IEEE 802
+-- OUI Extended), which shows in cooked captures.
+HANDBACK[0x88b7] = ethertype:get_dissector(0x88b7)
+ethertype:add(0x88b7, bcm)
