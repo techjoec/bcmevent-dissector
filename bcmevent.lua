@@ -2432,7 +2432,8 @@ local function parse_qos_mgmt(tvb, off, len, tree, reason)
 end
 
 -- mld_link_info_t: two signed bytes, read that way by the host handler.
--- Other lengths come from senders that number events differently.
+-- Other lengths stay raw because high event numbers and payload layouts vary
+-- by sender.
 local function parse_mld_up(tvb, off, len, tree)
     if len ~= 2 then return nil end
     local t = tree:add(tvb(off,2), "MLD Link Info")
