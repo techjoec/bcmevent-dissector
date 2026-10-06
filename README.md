@@ -57,6 +57,8 @@ dissector.
   statistics, health-check alerts, QoS management and the link RSN element
 - 802.11 BSS transition query, request and response bodies in action frames
 - MLD up events (MLD unit and link ID)
+- Mode-switch DYN160 details, WFA WNM notification elements (Hotspot 2.0 and MBO),
+  vendor-specific action OUIs, AirIQ IQ data headers and bounded sample arrays
 
 Event data with no public layout is shown as `bcmevent.payload`.
 

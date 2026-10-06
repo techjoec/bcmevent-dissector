@@ -75,3 +75,16 @@ bcmevent.event.type == 210 && bcmevent.mld.unit == 1 && bcmevent.mld.link_id == 
 bcmevent.mld.unit == -1 && bcmevent.mld.link_id == 3
 bcmevent.event.type == 210 && bcmevent.event.data_len == 39 && bcmevent.payload
 none: bcmevent.event.type == 210 && bcmevent.event.data_len == 39 && bcmevent.mld.unit
+bcmevent.modesw.dyn160.trigger == 5 && bcmevent.modesw.dyn160.sta == 02:00:00:00:00:02 && bcmevent.modesw.dyn160.rssi == -60
+bcmevent.modesw.dyn160.metric_160_80 == 301 && bcmevent.modesw.dyn160.traffic == 11 && bcmevent.payload == ee:ee
+none: bcmevent.modesw.length == 26 && bcmevent.modesw.dyn160.trigger
+bcmevent.mgmt.wnm.wfa.op_class == 115 && bcmevent.mgmt.wnm.wfa.channels == 24:28 && bcmevent.mgmt.wnm.wfa.npc_reason == 2
+bcmevent.mgmt.wnm.wfa.cellular == 1
+bcmevent.mgmt.wnm.wfa.reauth_delay == 120 && bcmevent.mgmt.wnm.wfa.url == "http"
+bcmevent.mgmt.wnm.dialog_token == 7 && bcmevent.payload && !bcmevent.mgmt.wnm.wfa.subtype
+bcmevent.mgmt.action.oui == 00:10:18 && !bcmevent.mgmt.action.code
+bcmevent.mgmt.action.category == 4 && bcmevent.mgmt.action.oui == 50:6f:9a
+bcmevent.mgmt.action.category == 11 && !bcmevent.mgmt.btm.query_reason
+bcmevent.mgmt.action.category == 26
+bcmevent.airiq.msg.type == 1 && bcmevent.airiq.timestamp == 777 && bcmevent.airiq.iq.sample_count == 2 && bcmevent.airiq.samples == 00:01:02:03:04:05:06:07
+bcmevent.airiq.sequence == 21 && bcmevent.airiq.samples == 00:01:02:03:04:05:06:07 && bcmevent.payload == aa:bb

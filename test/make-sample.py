@@ -262,6 +262,31 @@ frames = [
     ether(event(210, bytes([1, 2]), addr=AP)),                           # MLD_UP
     ether(event(210, bytes([0xff, 3]), addr=AP)),                        # MLD_UP, signed unit
     ether(event(210, bytes(39))),                                        # 210 from another sender: payload
+    ether(event(163, struct.pack("<HHHHIHH", 1, 30, 0x0404, 0x0202, 0x8, 4, 16)    # MODE_SWITCH DYN160
+                + struct.pack("<H6sHBBbB", 5, STA, 300, 2, 3, -60, 10), addr=bytes(6))),
+    ether(event(163, struct.pack("<HHHHIHH", 1, 36, 0x0404, 0x0202, 0x8, 4, 20) + bytes(4)
+                + struct.pack("<H6sHBBbB", 7, STA, 301, 2, 3, -61, 11) + b"\xee\xee",
+                addr=bytes(6))),                                         # DYN160 after inserted bytes, tail
+    ether(event(163, struct.pack("<HHHHIHH", 1, 26, 0x0404, 0x0202, 0x8, 4, 16) + bytes(10),
+                addr=bytes(6))),                                         # DYN160 too short: raw
+    ether(event(196, bytes([10, 26, 5, 221]) + ie(221, b"\x50\x6f\x9a\x02" + bytes([115, 36, 40, 1, 2]))
+                + ie(221, b"\x50\x6f\x9a\x03\x01"))),                  # WNM notification, MBO
+    ether(event(196, bytes([10, 26, 6, 1]) + ie(221, b"\x50\x6f\x9a\x01\x01" + struct.pack("<H", 120)
+                + b"\x04http"))),                                         # WNM notification, HS2.0 deauth
+    ether(event(196, bytes([10, 26, 7, 221]) + ie(221, b"\x00\x11\x22\x05\x01"))),  # unknown OUI: raw
+    ether(event(59, bytes([127, 0x00, 0x10, 0x18, 1, 2, 3]))),           # vendor-specific action
+    ether(event(59, bytes([4, 9, 0x50, 0x6f, 0x9a, 0x10, 0x01]))),       # public vendor-specific action
+    ether(event(59, bytes([11, 6, 1, 16]))),                             # unprotected WNM: not BTM
+    ether(event(59, bytes([26, 1, 0]))),                                 # FILS action
+    ether(event(172, struct.pack("<Bxxx3I3III", 1, 0, 0, 0, 0, 0, 0, 20, 36 + 188)                       # AIRIQ IQDATA with samples
+                + struct.pack("<IIHHBBBxHhhhhHHxxIIIIH", 1, 188, 129, 0, 1, 1, 2, 0x0404, 0, 1, 5180, -10, 16, 80,
+                              777, 2, 8, 5, 0) + bytes(128 + 2) + bytes(range(8)), addr=bytes(6))),
+    ether(event(172, struct.pack("<Bxxx3I3III", 1, 0, 0, 0, 0, 0, 0, 21, 36 + 50)                        # FFT: 8 samples, 2 extra
+                + struct.pack("<IIHHhHHHHHIIH6x", 2, 50, 129, 0, 0x0310, 2437, 0x1006, 64, 6, 0, 1000, 8, 0)
+                + bytes(range(8)) + b"\xaa\xbb", addr=bytes(6))),
+    ether(event(172, struct.pack("<Bxxx3I3III", 1, 0, 0, 0, 0, 0, 0, 22, 36 + 48)                        # FFT declares more than sent
+                + struct.pack("<IIHHhHHHHHIIH6x", 2, 48, 129, 0, 0x0310, 2437, 0x1006, 64, 7, 0, 1000, 64, 0)
+                + bytes(8), addr=bytes(6)), src=BAD),
     ether(event(209, bytes(20))),                                        # DHD CSI_DATA: stays payload
     ether(event(202, bytes(40))),                                        # DHD PFN_PARTIAL_RESULT: payload
 ]

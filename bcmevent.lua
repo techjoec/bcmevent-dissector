@@ -316,8 +316,9 @@ local ACTION_CATEGORIES = {
     [0]="Spectrum Management", [1]="QoS", [2]="DLS", [3]="Block Ack", [4]="Public",
     [5]="Radio Measurement", [6]="Fast BSS Transition", [7]="HT", [8]="SA Query",
     [9]="Protected Dual of Public Action", [10]="WNM", [11]="Unprotected WNM", [12]="TDLS",
-    [13]="Mesh", [15]="Self-protected", [17]="WMM", [19]="Robust AV Streaming", [21]="VHT", [30]="HE",
-    [31]="Protected HE",
+    [13]="Mesh", [14]="Multihop", [15]="Self-protected", [16]="DMG", [17]="WMM", [18]="FST",
+    [19]="Robust AV Streaming", [20]="Unprotected DMG", [21]="VHT", [22]="S1G", [26]="FILS", [30]="HE",
+    [31]="Protected HE", [34]="Protected Fine Timing Measurement",
     [36]="EHT", [37]="Protected EHT", [126]="Vendor-specific Protected",
     [127]="Vendor-specific"
 }
@@ -510,6 +511,26 @@ f.reason_code = ProtoField.uint16("bcmevent.mgmt.reason", "Reason Code", base.DE
 f.action_cat = ProtoField.uint8("bcmevent.mgmt.action.category", "Action Category", base.DEC,
     ACTION_CATEGORIES)
 f.action_code = ProtoField.uint8("bcmevent.mgmt.action.code", "Action Code", base.DEC)
+f.action_oui = ProtoField.bytes("bcmevent.mgmt.action.oui", "OUI", base.COLON)
+local WFA_WNM_SUBTYPES = {
+    [0]="Subscription Remediation Needed", [1]="Deauthentication Imminent Notice",
+    [2]="Non-preferred Channel Report", [3]="Cellular Data Capability", [4]="Terms and Conditions Acceptance"
+}
+f.wfa_subtype = ProtoField.uint8("bcmevent.mgmt.wnm.wfa.subtype", "WFA Subtype", base.DEC, WFA_WNM_SUBTYPES)
+f.wfa_url = ProtoField.string("bcmevent.mgmt.wnm.wfa.url", "URL")
+f.wfa_osu = ProtoField.uint8("bcmevent.mgmt.wnm.wfa.osu_method", "OSU Method", base.DEC,
+    {[0]="OMA-DM", [1]="SOAP-XML SPP"})
+f.wfa_deauth_reason = ProtoField.uint8("bcmevent.mgmt.wnm.wfa.deauth_reason", "Deauthentication Reason", base.DEC,
+    {[0]="BSS", [1]="ESS"})
+f.wfa_reauth_delay = ProtoField.uint16("bcmevent.mgmt.wnm.wfa.reauth_delay", "Re-authentication Delay",
+    base.UNIT_STRING, {" s"})
+f.wfa_op_class = ProtoField.uint8("bcmevent.mgmt.wnm.wfa.op_class", "Operating Class", base.DEC)
+f.wfa_channels = ProtoField.bytes("bcmevent.mgmt.wnm.wfa.channels", "Channels", base.SPACE)
+f.wfa_preference = ProtoField.uint8("bcmevent.mgmt.wnm.wfa.preference", "Preference", base.DEC)
+f.wfa_npc_reason = ProtoField.uint8("bcmevent.mgmt.wnm.wfa.npc_reason", "Reason", base.DEC,
+    {[0]="Unspecified", [1]="RSSI", [2]="External interference", [3]="Internal interference"})
+f.wfa_cell = ProtoField.uint8("bcmevent.mgmt.wnm.wfa.cellular", "Cellular Data", base.DEC,
+    {[1]="Available", [2]="Not available", [3]="Not supported"})
 local BTM_STATUS = {
     [0]="Accept", [1]="Reject", [2]="Reject: insufficient beacons", [3]="Reject: insufficient capacity",
     [4]="Reject: BSS termination undesired", [5]="Reject: BSS termination delay requested",
@@ -541,7 +562,7 @@ f.btm_status = ProtoField.uint8("bcmevent.mgmt.btm.status", "BTM Status", base.D
 f.btm_term_delay = ProtoField.uint8("bcmevent.mgmt.btm.term_delay", "BSS Termination Delay (min)", base.DEC)
 f.btm_target = ProtoField.ether("bcmevent.mgmt.btm.target_bssid", "Target BSSID")
 f.wnm_notif_type = ProtoField.uint8("bcmevent.mgmt.wnm.notification_type", "Notification Type", base.DEC,
-    {[1]="Firmware Update", [221]="Vendor Specific"})
+    {[0]="Firmware Update", [1]="WFA", [2]="Beacon Protection Failure", [221]="Vendor Specific"})
 
 -- wl_event_data_if
 f.if_ifidx = ProtoField.uint8("bcmevent.if_event.ifidx", "Interface Index", base.DEC)
@@ -688,6 +709,16 @@ f.ms_user = ProtoField.bool("bcmevent.modesw.flags.user", "User Request", 32, ni
 f.ms_state = ProtoField.uint32("bcmevent.modesw.flags.state", "State", base.DEC, MODESW_STATES, 0xc)
 f.ms_reason = ProtoField.uint16("bcmevent.modesw.reason", "Mode Switch Reason", base.DEC, MODESW_REASONS)
 f.ms_data_offset = ProtoField.uint16("bcmevent.modesw.data_offset", "Data Offset", base.DEC)
+f.dyn_trigger = ProtoField.uint16("bcmevent.modesw.dyn160.trigger", "Trigger", base.DEC, {
+    [0]="MU to SU", [1]="SU to MU", [2]="metric_dyn160", [3]="Association", [4]="Disassociation", [5]="RSSI",
+    [6]="Traffic", [7]="Interference", [8]="chanim_stats"
+})
+f.dyn_sta = ProtoField.ether("bcmevent.modesw.dyn160.sta", "Station")
+f.dyn_metric = ProtoField.uint16("bcmevent.modesw.dyn160.metric_160_80", "160/80 Metric", base.DEC)
+f.dyn_nss = ProtoField.uint8("bcmevent.modesw.dyn160.nss", "Station NSS", base.DEC)
+f.dyn_bw = ProtoField.uint8("bcmevent.modesw.dyn160.bw", "Station Bandwidth", base.DEC)
+f.dyn_rssi = ProtoField.int8("bcmevent.modesw.dyn160.rssi", "Station RSSI", base.UNIT_STRING, {" dBm"})
+f.dyn_traffic = ProtoField.uint8("bcmevent.modesw.dyn160.traffic", "Traffic Metric", base.DEC)
 
 -- wlc_trf_thold_event_t, wl_event_req_bw_upgd_t, wl_event_omnm_t, wl_edcrs_hi_event_t
 local OMNM_MODS = {[0]="NONE", [1]="ZDFS", [2]="AIRIQ", [3]="OBSS_DBS", [4]="DYN160", [5]="BW160"}
@@ -1334,6 +1365,40 @@ local function looks_like_mgmt(tvb, off, len)
     return fc % 16 == 0 and MGMT_SUBTYPES[math.floor(fc / 16) % 16] ~= nil
 end
 
+-- One WFA WNM notification sub-element (element 221, OUI 50:6f:9a, subtype),
+-- as hostapd builds and parses them. Returns the subtype name, or nil.
+local function parse_wfa_wnm(tvb, q, el, tree)
+    if tvb(q,1):uint() ~= 221 or el < 4 or tvb(q+2,3):uint() ~= 0x506f9a then return nil end
+    local sub = tvb(q+5,1):uint()
+    local et = tree:add(tvb(q,2+el), "WFA " .. (WFA_WNM_SUBTYPES[sub] or ("subtype " .. sub)))
+    et:add(f.ie_id, tvb(q,1))
+    et:add(f.ie_len, tvb(q+1,1))
+    et:add(f.wfa_subtype, tvb(q+5,1))
+    local d, n = q + 6, el - 4
+    local function url(at, ul)
+        if ul > 0 then et:add(f.wfa_url, tvb(at,ul)) end
+    end
+    if (sub == 0 or sub == 4) and n >= 1 and 1 + tvb(d,1):uint() <= n then
+        local ul = tvb(d,1):uint()
+        url(d + 1, ul)
+        if sub == 0 and ul > 0 and n >= 2 + ul then et:add(f.wfa_osu, tvb(d+1+ul,1)) end
+    elseif sub == 1 and n >= 4 and 4 + tvb(d+3,1):uint() <= n then
+        et:add(f.wfa_deauth_reason, tvb(d,1))
+        et:add_le(f.wfa_reauth_delay, tvb(d+1,2))
+        url(d + 4, tvb(d+3,1):uint())
+    elseif sub == 2 and n >= 4 then
+        et:add(f.wfa_op_class, tvb(d,1))
+        et:add(f.wfa_channels, tvb(d+1,n-3))
+        et:add(f.wfa_preference, tvb(d+n-2,1))
+        et:add(f.wfa_npc_reason, tvb(d+n-1,1))
+    elseif sub == 3 and n >= 1 then
+        et:add(f.wfa_cell, tvb(d,1))
+    elseif n > 0 then
+        et:add(f.payload, tvb(d,n))
+    end
+    return WFA_WNM_SUBTYPES[sub] or ("WFA subtype " .. sub)
+end
+
 -- WNM BSS transition management bodies (802.11 9.6.13), after category
 -- and action. Returns a summary, or nil to leave the bytes raw.
 local function parse_wnm_body(tvb, p, n, at, code)
@@ -1376,8 +1441,21 @@ local function parse_wnm_body(tvb, p, n, at, code)
         return "BTM response, " .. (BTM_STATUS[status] or ("status " .. status))
     elseif code == 26 and n >= 2 then                     -- WNM Notification Request
         at:add(f.wnm_notif_type, tvb(p+1,1))
-        if n > 2 then at:add(f.payload, tvb(p+2,n-2)) end
-        return "WNM notification"
+        local q, stop = p + 2, p + n
+        local subs = {}
+        local ntype = tvb(p+1,1):uint()
+        if ntype == 1 or ntype == 221 then                -- WFA (Hotspot 2.0) or vendor (MBO) elements
+            while q + 2 <= stop do
+                local el = tvb(q+1,1):uint()
+                if q + 2 + el > stop then break end
+                local st = parse_wfa_wnm(tvb, q, el, at)
+                if not st then break end
+                subs[#subs+1] = st
+                q = q + 2 + el
+            end
+        end
+        if q < stop then at:add(f.payload, tvb(q,stop-q)) end
+        return "WNM notification" .. (#subs > 0 and (", " .. table.concat(subs, ", ")) or "")
     end
     return nil
 end
@@ -1390,13 +1468,27 @@ local function parse_action_body(tvb, off, len, tree)
     local cat = tvb(off,1):uint()
     local at = tree:add(tvb(off,len), "802.11 Action")
     at:add(f.action_cat, tvb(off,1))
-    at:add(f.action_code, tvb(off+1,1))
     local cname = ACTION_CATEGORIES[cat] or ("category " .. cat)
     at:append_text(": " .. cname)
-    local detail
-    if (cat == 10 or cat == 11) and len > 2 then
-        detail = parse_wnm_body(tvb, off + 2, len - 2, at, tvb(off+1,1):uint())
+    -- Vendor-specific categories carry an OUI where others carry an action code.
+    if cat == 126 or cat == 127 then
+        if len < 4 then
+            at:add(f.payload, tvb(off+1,len-1))
+            return "Action, " .. cname
+        end
+        at:add(f.action_oui, tvb(off+1,3))
+        if len > 4 then at:add(f.payload, tvb(off+4,len-4)) end
+        return "Action, " .. cname .. " " .. oui_string(tvb, off + 1)
     end
+    at:add(f.action_code, tvb(off+1,1))
+    local code = tvb(off+1,1):uint()
+    if cat == 4 and code == 9 and len >= 5 then           -- Public vendor-specific
+        at:add(f.action_oui, tvb(off+2,3))
+        if len > 5 then at:add(f.payload, tvb(off+5,len-5)) end
+        return "Action, Public vendor-specific " .. oui_string(tvb, off + 2)
+    end
+    local detail
+    if cat == 10 and len > 2 then detail = parse_wnm_body(tvb, off + 2, len - 2, at, code) end
     if not detail and len > 2 then at:add(f.payload, tvb(off+2,len-2)) end
     return "Action, " .. (detail or cname)
 end
@@ -1901,8 +1993,20 @@ local function parse_mode_switch(tvb, off, len, tree)
     fl:add_le(f.ms_state, tvb(off+8,4))
     t:add_le(f.ms_reason, tvb(off+12,2))
     t:add_le(f.ms_data_offset, tvb(off+14,2))
-    if len > doff then t:add(f.payload, tvb(off+doff,len-doff)) end
     local reason = tvb(off+12,2):le_uint()
+    local d = off + doff
+    if reason == 4 and len - doff >= 14 then              -- wl_event_mode_switch_dyn160
+        local dt = t:add(tvb(d,14), "DYN160")
+        dt:add_le(f.dyn_trigger, tvb(d,2))
+        dt:add(f.dyn_sta, tvb(d+2,6))
+        dt:add_le(f.dyn_metric, tvb(d+8,2))
+        dt:add(f.dyn_nss, tvb(d+10,1))
+        dt:add(f.dyn_bw, tvb(d+11,1))
+        dt:add(f.dyn_rssi, tvb(d+12,1))
+        dt:add(f.dyn_traffic, tvb(d+13,1))
+        d = d + 14
+    end
+    if d < off + len then t:add(f.payload, tvb(d,off+len-d)) end
     local state = math.floor(tvb(off+8,4):le_uint() / 4) % 4
     return (MODESW_REASONS[reason] or ("reason " .. reason)) .. " " .. MODESW_STATES[state]
 end
@@ -2210,6 +2314,19 @@ local function parse_anqp(tvb, off, len, tree)
     return "ANQP " .. table.concat(names, ", ")
 end
 
+-- Samples after a header that declares their size: bounded by what is there,
+-- with any extra bytes left raw.
+local function add_samples(tvb, p, avail, declared, tree)
+    local n = math.min(declared, avail)
+    if n > 0 then tree:add(f.airiq_samples, tvb(p,n)) end
+    if declared > avail then
+        truncated(tree, avail > 0 and tvb(p,avail) or tvb(p-4,4),
+            string.format("Header declares %u sample bytes, %u present", declared, avail))
+    elseif avail > n then
+        tree:add(f.payload, tvb(p+n,avail-n))
+    end
+end
+
 -- AirIQ message (airiq_message_header_t and its type's header), then data
 local function parse_airiq_msg(tvb, p, n, tree)
     if n < 12 then return nil end
@@ -2233,7 +2350,8 @@ local function parse_airiq_msg(tvb, p, n, tree)
         mt:add_le(f.airiq_ts, tvb(p+24,4))
         mt:add_le(f.airiq_data_bytes, tvb(p+28,4))
         mt:add_le(f.airiq_fc3, tvb(p+32,2))
-        body = p + 40
+        add_samples(tvb, p + 40, n - 40, tvb(p+28,4):le_uint(), mt)
+        body = p + n
     elseif mtype == 3 and (n == 20 or n == 36) then       -- airiq_scan_complete_t
         if n == 36 then
             mt:add(f.airiq_ifname, tvb(p+12,16), trim_nul(tvb(p+12,16):string()))
@@ -2242,14 +2360,20 @@ local function parse_airiq_msg(tvb, p, n, tree)
         mt:add_le(f.airiq_tsf_start, tvb(body,4))
         mt:add_le(f.airiq_tsf_end, tvb(body+4,4))
         body = body + 8
-    elseif mtype == 1 and n >= 48 then                    -- airiq_iqdata_header_t, main fields
+    elseif mtype == 1 and n >= 48 then                    -- airiq_iqdata_header_t (180 bytes)
         mt:add(f.airiq_iq_core, tvb(p+14,1))
         mt:add_le(f.airiq_iq_format, tvb(p+16,2))
         mt:add_le(f.airiq_fc, tvb(p+22,2))
-        mt:add_le(f.airiq_ts, tvb(p+30,4))
-        mt:add_le(f.airiq_iq_count, tvb(p+34,4))
-        mt:add_le(f.airiq_data_bytes, tvb(p+38,4))
-        body = p + n
+        mt:add_le(f.airiq_ts, tvb(p+32,4))
+        mt:add_le(f.airiq_iq_count, tvb(p+36,4))
+        mt:add_le(f.airiq_data_bytes, tvb(p+40,4))
+        if n >= 180 then
+            add_samples(tvb, p + 180, n - 180, tvb(p+40,4):le_uint(), mt)
+            body = p + n
+        else                                              -- header cut short: rest is header, not samples
+            mt:add(f.payload, tvb(p+48,n-48))
+            body = p + n
+        end
     end
     if body < p + n then mt:add(f.airiq_samples, tvb(body,p+n-body)) end
     return AIRIQ_MSG_TYPES[mtype]
@@ -2314,8 +2438,8 @@ local function parse_lteu(tvb, off, len, tree)
         t:add_le(f.lteu_iq_seq, tvb(p+16,2))
         add_chanspec(t, f.lteu_chanspec, tvb(p+18,2), true)
         t:add_le(f.airiq_data_bytes, tvb(p+20,4))
-        p, n = p + 24, n - 24
-        if n > 0 then t:add(f.airiq_samples, tvb(p,n)) n = 0 end
+        add_samples(tvb, p + 24, n - 24, tvb(p+20,4):le_uint(), t)
+        n = 0
     end
     if n > 0 then t:add(f.payload, tvb(p,n)) end
     return s
