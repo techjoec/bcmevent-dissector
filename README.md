@@ -42,6 +42,9 @@ Remove any **Decode As** rule for EtherType `0x886c`. It overrides this plugin.
   quality, mode switch, bandwidth upgrade, OMN master, BSS color, EDCRS,
   traffic threshold, external authentication, RRM, DPSTA interface and PMKID
   candidate events
+- Deauthentication and disassociation frame bodies, ADDTS delay, country
+  code, FIFO credits, credit borrowing, FT key, power-save mode and band
+  change
 
 Event data with no public layout is shown as `bcmevent.payload`.
 

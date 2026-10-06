@@ -195,6 +195,17 @@ frames = [
     ether(event(206, struct.pack("<HHHH", 1, 8, 1, 1), addr=bytes(6))),  # EDCRS_HI_EVENT
     ether(event(21, struct.pack("<I", 2) + AP + b"\x01" + STA + b"\x00")),  # PMKID_CACHE
     ether(event(21, struct.pack("<I", 3) + AP + b"\x01"), src=BAD),      # PMKID_CACHE, count overruns
+    ether(event(12, struct.pack("<H", 8), reason=8)),                    # DISASSOC_IND, frame body
+    ether(event(6, struct.pack("<H", 2) + ie(76, bytes(16)), reason=2)),  # DEAUTH_IND, reason and element
+    ether(event(5, struct.pack("<H", 3) + b"\x01", reason=3)),           # DEAUTH, trailing byte stays payload
+    ether(event(27, struct.pack("<I", 30))),                             # ADDTS_IND, TS delay
+    ether(event(47, b"US\0", addr=bytes(6))),                            # COUNTRY_CODE_CHANGED
+    ether(event(74, bytes([8, 4, 6, 2, 1, 0]), addr=bytes(6))),          # FIFO_CREDIT_MAP
+    ether(event(117, struct.pack("<I", 1), addr=bytes(6))),              # ALLOW_CREDIT_BORROW
+    ether(event(125, bytes(range(32)), addr=AP)),                        # BSSID, FT key
+    ether(event(199, b"\x02", addr=bytes(6))),                           # PWR_SAVE_SYNC, 1 byte
+    ether(event(199, struct.pack("<i", 0), addr=bytes(6))),              # PWR_SAVE_SYNC, int
+    ether(event(201, struct.pack("<I", 2), addr=bytes(6))),              # BAND_CHANGE
     ether(event(209, bytes(20))),                                        # DHD CSI_DATA: stays payload
     ether(event(202, bytes(40))),                                        # DHD PFN_PARTIAL_RESULT: payload
 ]

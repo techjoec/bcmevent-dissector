@@ -690,6 +690,23 @@ f.pmkid_count = ProtoField.uint32("bcmevent.pmkid_cand.count", "Candidate Count"
 f.pmkid_bssid = ProtoField.ether("bcmevent.pmkid_cand.bssid", "Candidate BSSID")
 f.pmkid_preauth = ProtoField.uint8("bcmevent.pmkid_cand.preauth", "Pre-authentication", base.DEC)
 
+-- Single values, as the bcmdhd, HND wl_cfg80211 and wlfc handlers read them
+f.ts_delay = ProtoField.uint32("bcmevent.addts.ts_delay", "TS Delay", base.DEC)
+f.country = ProtoField.string("bcmevent.country_code", "Country Code")
+f.credit_ac0 = ProtoField.uint8("bcmevent.fifo_credit.ac0", "AC0 (BE) Credits", base.DEC)
+f.credit_ac1 = ProtoField.uint8("bcmevent.fifo_credit.ac1", "AC1 (BK) Credits", base.DEC)
+f.credit_ac2 = ProtoField.uint8("bcmevent.fifo_credit.ac2", "AC2 (VI) Credits", base.DEC)
+f.credit_ac3 = ProtoField.uint8("bcmevent.fifo_credit.ac3", "AC3 (VO) Credits", base.DEC)
+f.credit_bcmc = ProtoField.uint8("bcmevent.fifo_credit.bcmc", "BC/MC Credits", base.DEC)
+f.credit_other = ProtoField.uint8("bcmevent.fifo_credit.other", "Other Credits", base.DEC)
+f.borrow = ProtoField.uint32("bcmevent.credit_borrow.allowed", "Credit Borrowing", base.DEC,
+    {[0]="Disallowed", [1]="Allowed"})
+f.fbt_key = ProtoField.bytes("bcmevent.bssid.fbt_key", "FT Key")
+local PM_MODES = {[0]="PM_OFF", [1]="PM_MAX", [2]="PM_FAST"}
+local BANDS = {[0]="AUTO", [1]="5G", [2]="2G", [3]="ALL", [4]="6G"}
+f.pm_mode = ProtoField.uint32("bcmevent.pm_mode", "Power Management Mode", base.DEC, PM_MODES)
+f.band = ProtoField.uint32("bcmevent.band", "Band", base.DEC, BANDS)
+
 -- bcm_dngl_event_msg_t
 f.dngl_version = ProtoField.uint16("bcmevent.dngl.version", "Dongle Event Version", base.DEC)
 f.dngl_type = ProtoField.uint16("bcmevent.dngl.type", "Dongle Event Type", base.DEC, DNGL_EVENT_NAMES)
@@ -1748,8 +1765,87 @@ local function parse_pmkid_cand(tvb, off, len, tree)
     return n .. (n == 1 and " candidate" or " candidates")
 end
 
+-- Whether a run of elements fills len exactly
+local function ies_fit(tvb, off, len)
+    local p, stop = off, off + len
+    while p + 2 <= stop do p = p + 2 + tvb(p+1,1):uint() end
+    return p == stop
+end
+
+-- DEAUTH, DEAUTH_IND, DISASSOC, DISASSOC_IND: the frame body, a reason code
+-- and any elements (bcmdhd builds the management frame around it).
+local function parse_leave_body(tvb, off, len, tree, ereason)
+    if len < 2 then return nil end
+    local reason = tvb(off,2):le_uint()
+    local t = tree:add(tvb(off,len), "Frame Body")
+    local ri = t:add_le(f.reason_code, tvb(off,2))
+    local name = DOT11_REASON_NAMES[reason]
+    if name then ri:append_text(" (" .. name .. ")") end
+    if len > 2 then
+        if ies_fit(tvb, off + 2, len - 2) then parse_ies(tvb, off + 2, len - 2, t)
+        else t:add(f.payload, tvb(off+2,len-2)) end
+    end
+    if reason == ereason then return "frame body" end
+    return "body reason " .. (name or reason)
+end
+
+local function parse_addts(tvb, off, len, tree)
+    if len ~= 4 then return nil end
+    tree:add_le(f.ts_delay, tvb(off,4))
+    return "TS delay " .. tvb(off,4):le_uint()
+end
+
+local function parse_country(tvb, off, len, tree)
+    if len < 2 or len > 4 then return nil end
+    local s = trim_nul(tvb(off,len):string())
+    if not s:match("^[%w#][%w#]%w?$") then return nil end
+    tree:add(f.country, tvb(off,len), s)
+    return s
+end
+
+local function parse_fifo_credit(tvb, off, len, tree)
+    if len ~= 6 then return nil end
+    local t = tree:add(tvb(off,6), "FIFO Credits")
+    local fs = {f.credit_ac0, f.credit_ac1, f.credit_ac2, f.credit_ac3, f.credit_bcmc, f.credit_other}
+    local v = {}
+    for i = 1, 6 do
+        t:add(fs[i], tvb(off+i-1,1))
+        v[i] = tvb(off+i-1,1):uint()
+    end
+    return table.concat(v, "/")
+end
+
+local function parse_borrow(tvb, off, len, tree)
+    if len ~= 4 or tvb(off,4):le_uint() > 1 then return nil end
+    tree:add_le(f.borrow, tvb(off,4))
+    return tvb(off,4):le_uint() == 1 and "borrowing allowed" or "borrowing disallowed"
+end
+
+-- FBT_KEYLEN (32) bytes: bcmdhd keeps them as the FT key
+local function parse_bssid_key(tvb, off, len, tree)
+    if len ~= 32 then return nil end
+    tree:add(f.fbt_key, tvb(off,32))
+    return "FT key"
+end
+
+-- An int on the host side; some firmware sends only its low byte
+local function parse_pm_mode(tvb, off, len, tree)
+    if (len ~= 1 and len ~= 4) or tvb(off,len):le_uint() > 2 then return nil end
+    tree:add_le(f.pm_mode, tvb(off,len))
+    return PM_MODES[tvb(off,len):le_uint()]
+end
+
+local function parse_band(tvb, off, len, tree)
+    if len ~= 4 or tvb(off,4):le_uint() > 4 then return nil end
+    tree:add_le(f.band, tvb(off,4))
+    return BANDS[tvb(off,4):le_uint()]
+end
+
 -- Fixed structures, by HND event number
 local DATA_PARSERS = {
+    [5] = parse_leave_body, [6] = parse_leave_body, [11] = parse_leave_body, [12] = parse_leave_body,
+    [27] = parse_addts, [47] = parse_country, [74] = parse_fifo_credit, [117] = parse_borrow,
+    [125] = parse_bssid_key, [199] = parse_pm_mode, [201] = parse_band,
     [21] = parse_pmkid_cand, [80] = parse_csa_complete, [124] = parse_cca, [140] = parse_dpsta,
     [141] = parse_rrm, [160] = parse_radar, [163] = parse_mode_switch, [183] = parse_trf_thold,
     [185] = parse_bw_upgrade, [193] = parse_ext_auth, [194] = parse_omnm, [202] = parse_color,
@@ -1838,7 +1934,7 @@ local function dissect_data(tvb, etype, reason, off, len, tree)
 
     else
         local parse = DATA_PARSERS[etype]
-        local s = parse and parse(tvb, off, len, tree)
+        local s = parse and parse(tvb, off, len, tree, reason)
         if s then return s end
         tree:add(f.payload, tvb(off,len))
     end
