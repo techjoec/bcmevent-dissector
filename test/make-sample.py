@@ -171,6 +171,32 @@ frames = [
     ether(bcmeth(1, bytes(20)), src=BAD),                                # event message cut short
     ether(event(180, struct.pack("<HHHHII", 1, 28, 2, 24, 0, 0x80000000)  # older HND CEVENT, no msgtype
                 + struct.pack("<Q", 1767225600123) + b"\x01\x02\x03\x04")),
+    # fixed event structures
+    ether(event(80, b"\x00", addr=bytes(6))),                            # CSA_COMPLETE_IND, mode only
+    ether(event(80, struct.pack("<BBHBB", 1, 5, 0xe02a, 128, 0), addr=bytes(6))),  # full wl_chan_switch_t
+    ether(event(209, struct.pack("<BBBBBBH", 1, 8, 1, 1, 0, 0, 0xe06a))),  # CSA_RECV_IND
+    ether(event(124, struct.pack("<HHHHIII", 0, 0, 0x1006, 12, 1000, 250, 86400), addr=bytes(6))),
+    ether(event(124, struct.pack("<HHHHIIIII", 0, 0x100, 0xe02a, 88, 1000, 120, 300, 15, 86400)
+                + bytes(64) + struct.pack("<I", 7), addr=bytes(6))),     # CCA_CHAN_QUAL, FULL_CCA
+    ether(event(124, struct.pack("<HHHHi", 0, 1, 0x1006, 4, -92), addr=bytes(6))),  # CCA_CHAN_QUAL, noise
+    ether(event(140, struct.pack("<I", 2))),                             # DPSTA_INTF_IND, DWDS
+    ether(event(141, struct.pack("<hhhh", 0, 8, 5, 1) + bytes(8))),      # RRM
+    ether(event(160, struct.pack("<IHH", 1, 0xe034, 0xe02a)              # RADAR_DETECTED
+                + struct.pack("<BxHHHHH", 2, 20, 40, 1428, 1428, 1) * 2, addr=bytes(6))),
+    ether(event(163, struct.pack("<HHHHIHH", 1, 16, 0x0404, 0x0202, 0x8, 3, 16), addr=bytes(6))),  # MODE_SWITCH
+    ether(event(183, struct.pack("<HHHH", 2, 4, 1, 10))),                # TXFAIL_TRFTHOLD
+    ether(event(185, struct.pack("<HHHH", 1, 8, 0, 0xe832), addr=bytes(6))),  # REQ_BW_CHANGE
+    ether(event(193, struct.pack("<I", 7) + b"example".ljust(32, b"\0") + AP + b"\0\0"
+                + struct.pack("<Ii", 0x000fac08, 0))),                   # START_AUTH, 52 bytes
+    ether(event(193, struct.pack("<I", 0) + bytes(32) + AP + b"\0\0"
+                + struct.pack("<Ii", 0x000fac08, 0) + STA + b"\0\0")),   # START_AUTH with MLD address
+    ether(event(194, struct.pack("<HHHHHH", 1, 12, 0, 0, 1, 30), addr=bytes(6))),  # OMN_MASTER
+    ether(event(202, bytes([5, 1, 0, 0]) + bytes(4) + b"\x01" + bytes(58), addr=bytes(6))),  # COLOR
+    ether(event(206, struct.pack("<HHHH", 1, 8, 1, 1), addr=bytes(6))),  # EDCRS_HI_EVENT
+    ether(event(21, struct.pack("<I", 2) + AP + b"\x01" + STA + b"\x00")),  # PMKID_CACHE
+    ether(event(21, struct.pack("<I", 3) + AP + b"\x01"), src=BAD),      # PMKID_CACHE, count overruns
+    ether(event(209, bytes(20))),                                        # DHD CSI_DATA: stays payload
+    ether(event(202, bytes(40))),                                        # DHD PFN_PARTIAL_RESULT: payload
 ]
 frames = [(f, len(f)) for f in frames]
 snapped = ether(event(69, SCAN, status=8))

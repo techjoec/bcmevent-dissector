@@ -38,6 +38,12 @@ Remove any **Decode As** rule for EtherType `0x886c`. It overrides this plugin.
   RX metadata
 - `WLC_E_IF`, CEVENT, MACDBG ratelinkmem, invalid-IE, HND channel-change and
   CAC events, and the DHD `WLC_E_WSEC` event
+- Channel switch (completed and received), radar detection, CCA channel
+  quality, mode switch, bandwidth upgrade, OMN master, BSS color, EDCRS,
+  traffic threshold, external authentication, RRM, DPSTA interface and PMKID
+  candidate events
+
+Event data with no public layout is shown as `bcmevent.payload`.
 
 A length that runs past the data is flagged as malformed
 (`bcmevent.truncated`), and so is a length or offset its structure cannot

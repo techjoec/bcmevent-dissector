@@ -589,6 +589,107 @@ f.inv_length = ProtoField.uint16("bcmevent.invalid_ie.length", "Invalid IE Copy 
 f.inv_type = ProtoField.uint16("bcmevent.invalid_ie.frame_type", "Containing Frame Type/Subtype", base.HEX)
 f.inv_error = ProtoField.uint16("bcmevent.invalid_ie.error", "IE Error", base.DEC, {[1]="OUT_OF_RANGE"})
 
+-- wl_chan_switch_t (WLC_E_CSA_COMPLETE_IND) and wl_chan_switch_recv_t (WLC_E_CSA_RECV_IND)
+f.csa_mode = ProtoField.uint8("bcmevent.csa.mode", "Switch Mode", base.DEC,
+    {[0]="Transmission allowed", [1]="No transmission until the switch"})
+f.csa_count = ProtoField.uint8("bcmevent.csa.count", "Beacons Before Switch", base.DEC)
+f.csa_chanspec = ProtoField.uint16("bcmevent.csa.chanspec", "Chanspec", base.HEX)
+f.csa_reg = ProtoField.uint8("bcmevent.csa.regulatory_class", "Regulatory Class", base.DEC)
+f.csa_frame_type = ProtoField.uint8("bcmevent.csa.frame_type", "Frame Type", base.DEC)
+f.csa_recv_version = ProtoField.uint8("bcmevent.csa.recv.version", "CSA Receive Version", base.DEC)
+f.csa_recv_length = ProtoField.uint8("bcmevent.csa.recv.length", "CSA Receive Length", base.DEC)
+f.csa_recv_valid = ProtoField.uint8("bcmevent.csa.recv.chanspec_valid", "Chanspec Valid", base.DEC)
+
+-- cca_chan_qual_event_t
+local CCA_QUAL_IDS = {
+    [0]="CCA", [1]="NF", [2]="NF_LTE", [0x100]="FULL_CCA", [0x200]="FULLPM_CCA",
+    [0x400]="FULLPM_CCA_OFDM_DESENSE", [0x500]="FULLPM_CCA_ALL_DESENSE"
+}
+f.cca_status = ProtoField.uint16("bcmevent.cca.status", "CCA Status", base.HEX)
+f.cca_id = ProtoField.uint16("bcmevent.cca.id", "Report ID", base.HEX, CCA_QUAL_IDS)
+f.cca_chanspec = ProtoField.uint16("bcmevent.cca.chanspec", "Chanspec", base.HEX)
+f.cca_len = ProtoField.uint16("bcmevent.cca.length", "Report Length", base.DEC)
+f.cca_duration = ProtoField.uint32("bcmevent.cca.duration", "Sample Duration", base.UNIT_STRING, {" ms"})
+f.cca_congest = ProtoField.uint32("bcmevent.cca.congest", "CCA Busy", base.UNIT_STRING, {" ms"})
+f.cca_congest_ibss = ProtoField.uint32("bcmevent.cca.congest_ibss", "Busy, Own BSS", base.UNIT_STRING, {" ms"})
+f.cca_congest_obss = ProtoField.uint32("bcmevent.cca.congest_obss", "Busy, Other BSS", base.UNIT_STRING, {" ms"})
+f.cca_interference = ProtoField.uint32("bcmevent.cca.interference", "Non-802.11 Interference",
+    base.UNIT_STRING, {" ms"})
+f.cca_timestamp = ProtoField.uint32("bcmevent.cca.timestamp", "Timestamp", base.UNIT_STRING, {" s"})
+f.cca_txnode = ProtoField.bytes("bcmevent.cca.txnode", "TX Node")
+f.cca_rxnode = ProtoField.bytes("bcmevent.cca.rxnode", "RX Node")
+f.cca_xxobss = ProtoField.uint32("bcmevent.cca.xxobss", "XXOBSS", base.DEC)
+f.cca_noise = ProtoField.int32("bcmevent.cca.noise", "Noise Floor", base.UNIT_STRING, {" dBm"})
+
+-- wl_dpsta_intf_event_t and wl_rrm_event_t
+f.dpsta_type = ProtoField.uint32("bcmevent.dpsta.intf_type", "Interface Type", base.DEC,
+    {[1]="PSTA", [2]="DWDS"})
+f.rrm_version = ProtoField.int16("bcmevent.rrm.version", "RRM Event Version", base.DEC)
+f.rrm_len = ProtoField.int16("bcmevent.rrm.length", "RRM Event Length", base.DEC)
+f.rrm_cat = ProtoField.int16("bcmevent.rrm.category", "Category", base.DEC)
+f.rrm_subevent = ProtoField.int16("bcmevent.rrm.subevent", "Subevent", base.DEC,
+    {[0]="NONE", [1]="FRNG_REQ", [2]="FRNG_REP"})
+
+-- wl_event_radar_detect_data_t
+f.radar_version = ProtoField.uint32("bcmevent.radar.version", "Radar Event Version", base.DEC)
+f.radar_current = ProtoField.uint16("bcmevent.radar.current_chanspec", "Radar Chanspec", base.HEX)
+f.radar_target = ProtoField.uint16("bcmevent.radar.target_chanspec", "Target Chanspec", base.HEX)
+f.radar_type = ProtoField.uint8("bcmevent.radar.type", "Radar Type", base.DEC)
+f.radar_min_pw = ProtoField.uint16("bcmevent.radar.min_pw", "Min Pulse Width (1/20 us)", base.DEC)
+f.radar_max_pw = ProtoField.uint16("bcmevent.radar.max_pw", "Max Pulse Width (1/20 us)", base.DEC)
+f.radar_min_pri = ProtoField.uint16("bcmevent.radar.min_pri", "Min Pulse Interval", base.UNIT_STRING, {" us"})
+f.radar_max_pri = ProtoField.uint16("bcmevent.radar.max_pri", "Max Pulse Interval", base.UNIT_STRING, {" us"})
+f.radar_subband = ProtoField.uint16("bcmevent.radar.subband", "Subband", base.HEX)
+
+-- wl_event_mode_switch_t
+local MODESW_REASONS = {[0]="UNKNOWN", [1]="ACSD", [2]="OBSS_DBS", [3]="DFS", [4]="DYN160"}
+local MODESW_STATES = {[0]="REQUESTED", [1]="INITIATED", [2]="COMPLETE", [3]="FAILURE"}
+f.ms_version = ProtoField.uint16("bcmevent.modesw.version", "Mode Switch Version", base.DEC)
+f.ms_length = ProtoField.uint16("bcmevent.modesw.length", "Mode Switch Length", base.DEC)
+f.ms_from = ProtoField.uint16("bcmevent.modesw.opmode_from", "Operating Mode From", base.HEX)
+f.ms_to = ProtoField.uint16("bcmevent.modesw.opmode_to", "Operating Mode To", base.HEX)
+f.ms_flags = ProtoField.uint32("bcmevent.modesw.flags", "Mode Switch Flags", base.HEX)
+f.ms_peer = ProtoField.bool("bcmevent.modesw.flags.peer", "Peer", 32, nil, 0x1)
+f.ms_user = ProtoField.bool("bcmevent.modesw.flags.user", "User Request", 32, nil, 0x2)
+f.ms_state = ProtoField.uint32("bcmevent.modesw.flags.state", "State", base.DEC, MODESW_STATES, 0xc)
+f.ms_reason = ProtoField.uint16("bcmevent.modesw.reason", "Mode Switch Reason", base.DEC, MODESW_REASONS)
+f.ms_data_offset = ProtoField.uint16("bcmevent.modesw.data_offset", "Data Offset", base.DEC)
+
+-- wlc_trf_thold_event_t, wl_event_req_bw_upgd_t, wl_event_omnm_t, wl_edcrs_hi_event_t
+local OMNM_MODS = {[0]="NONE", [1]="ZDFS", [2]="AIRIQ", [3]="OBSS_DBS", [4]="DYN160", [5]="BW160"}
+f.trf_version = ProtoField.uint16("bcmevent.trf_thold.version", "Threshold Event Version", base.DEC)
+f.trf_length = ProtoField.uint16("bcmevent.trf_thold.length", "Threshold Event Length", base.DEC)
+f.trf_type = ProtoField.uint16("bcmevent.trf_thold.type", "Threshold Type", base.DEC)
+f.trf_count = ProtoField.uint16("bcmevent.trf_thold.count", "Count", base.DEC)
+f.bwu_version = ProtoField.uint16("bcmevent.bw_upgrade.version", "BW Upgrade Version", base.DEC)
+f.bwu_length = ProtoField.uint16("bcmevent.bw_upgrade.length", "BW Upgrade Length", base.DEC)
+f.bwu_flags = ProtoField.uint16("bcmevent.bw_upgrade.flags", "Flags", base.HEX)
+f.bwu_chanspec = ProtoField.uint16("bcmevent.bw_upgrade.chanspec", "Target Chanspec", base.HEX)
+f.omnm_version = ProtoField.uint16("bcmevent.omnm.version", "OMN Master Version", base.DEC)
+f.omnm_length = ProtoField.uint16("bcmevent.omnm.length", "OMN Master Length", base.DEC)
+f.omnm_type = ProtoField.uint16("bcmevent.omnm.type", "Type", base.DEC)
+f.omnm_flags = ProtoField.uint16("bcmevent.omnm.flags", "Flags", base.HEX)
+f.omnm_mod = ProtoField.uint16("bcmevent.omnm.mod", "Master Module", base.DEC, OMNM_MODS)
+f.omnm_lock = ProtoField.uint16("bcmevent.omnm.lock_life", "Lock Life", base.UNIT_STRING, {" s"})
+f.edcrs_version = ProtoField.uint16("bcmevent.edcrs.version", "EDCRS Version", base.DEC)
+f.edcrs_length = ProtoField.uint16("bcmevent.edcrs.length", "EDCRS Length", base.DEC)
+f.edcrs_type = ProtoField.uint16("bcmevent.edcrs.type", "EDCRS Type", base.DEC)
+f.edcrs_status = ProtoField.uint16("bcmevent.edcrs.status", "EDCRS Status", base.DEC)
+
+-- wl_ext_auth_evt_t, wl_color_event_t, pmkid_cand_list_t
+f.ea_ssid_len = ProtoField.uint32("bcmevent.ext_auth.ssid_len", "SSID Length", base.DEC)
+f.ea_ssid = ProtoField.string("bcmevent.ext_auth.ssid", "SSID")
+f.ea_bssid = ProtoField.ether("bcmevent.ext_auth.bssid", "BSSID")
+f.ea_akm = ProtoField.uint32("bcmevent.ext_auth.key_mgmt_suite", "Key Management Suite", base.HEX)
+f.ea_status = ProtoField.int32("bcmevent.ext_auth.status", "Status", base.DEC)
+f.ea_mld = ProtoField.ether("bcmevent.ext_auth.mld_addr", "MLD Address")
+f.color_own = ProtoField.uint8("bcmevent.color.own", "Own BSS Color", base.DEC)
+f.color_collision = ProtoField.uint8("bcmevent.color.collision", "Collision", base.DEC)
+f.color_colors = ProtoField.bytes("bcmevent.color.colors", "Colors")
+f.pmkid_count = ProtoField.uint32("bcmevent.pmkid_cand.count", "Candidate Count", base.DEC)
+f.pmkid_bssid = ProtoField.ether("bcmevent.pmkid_cand.bssid", "Candidate BSSID")
+f.pmkid_preauth = ProtoField.uint8("bcmevent.pmkid_cand.preauth", "Pre-authentication", base.DEC)
+
 -- bcm_dngl_event_msg_t
 f.dngl_version = ProtoField.uint16("bcmevent.dngl.version", "Dongle Event Version", base.DEC)
 f.dngl_type = ProtoField.uint16("bcmevent.dngl.type", "Dongle Event Type", base.DEC, DNGL_EVENT_NAMES)
@@ -1414,6 +1515,247 @@ local function parse_invalid_ie(tvb, off, len, tree)
     return true
 end
 
+-- The parsers below return an Info suffix, or nil when the data is not the
+-- structure they expect; dissect_data then shows it as payload. Event numbers
+-- above 170 mean other things on DHD and CYW firmware, so their parsers
+-- insist on the version and size.
+
+-- wl_chan_switch_t, as far as the sender included it: some firmware sends
+-- only the first byte.
+local function parse_csa_complete(tvb, off, len, tree)
+    local mode = tvb(off,1):uint()
+    if mode > 1 then return nil end
+    local n = math.min(len, 6)
+    local t = tree:add(tvb(off,n), "Channel Switch")
+    t:add(f.csa_mode, tvb(off,1))
+    if n >= 2 then t:add(f.csa_count, tvb(off+1,1)) end
+    local c
+    if n >= 4 then c = select(2, add_chanspec(t, f.csa_chanspec, tvb(off+2,2), true)) end
+    if n >= 5 then t:add(f.csa_reg, tvb(off+4,1)) end
+    if n >= 6 then t:add(f.csa_frame_type, tvb(off+5,1)) end
+    return c and string.format("mode %u, %s", mode, chanspec_text(c)) or ("mode " .. mode)
+end
+
+-- wl_chan_switch_recv_t
+local function parse_csa_recv(tvb, off, len, tree)
+    if len < 8 or tvb(off,1):uint() ~= 1 or tvb(off+1,1):uint() ~= 8 then return nil end
+    local t = tree:add(tvb(off,8), "Channel Switch Received")
+    t:add(f.csa_recv_version, tvb(off,1))
+    t:add(f.csa_recv_length, tvb(off+1,1))
+    t:add(f.csa_recv_valid, tvb(off+2,1))
+    t:add(f.csa_mode, tvb(off+3,1))
+    t:add(f.csa_reg, tvb(off+4,1))
+    local _, c = add_chanspec(t, f.csa_chanspec, tvb(off+6,2), true)
+    local mode = tvb(off+3,1):uint()
+    if tvb(off+2,1):uint() == 1 and c then return string.format("mode %u, %s", mode, chanspec_text(c)) end
+    return "mode " .. mode
+end
+
+-- cca_chan_qual_event_t: an 8-byte header, then the report its id names
+local function parse_cca(tvb, off, len, tree)
+    if len < 8 then return nil end
+    local id = tvb(off+2,2):le_uint()
+    local rlen = tvb(off+6,2):le_uint()
+    if not CCA_QUAL_IDS[id] or rlen > len - 8 then return nil end
+    local t = tree:add(tvb(off,8+rlen), "Channel Quality")
+    t:add_le(f.cca_status, tvb(off,2))
+    t:add_le(f.cca_id, tvb(off+2,2))
+    local _, c = add_chanspec(t, f.cca_chanspec, tvb(off+4,2), true)
+    t:add_le(f.cca_len, tvb(off+6,2))
+    local p = off + 8
+    local s = CCA_QUAL_IDS[id] .. (c and (", " .. chanspec_text(c)) or "")
+    if id == 0 and rlen >= 12 then
+        t:add_le(f.cca_duration, tvb(p,4))
+        t:add_le(f.cca_congest, tvb(p+4,4))
+        t:add_le(f.cca_timestamp, tvb(p+8,4))
+        s = s .. string.format(", busy %u of %u ms", tvb(p+4,4):le_uint(), tvb(p,4):le_uint())
+    elseif id == 0x100 and rlen >= 88 then
+        t:add_le(f.cca_duration, tvb(p,4))
+        t:add_le(f.cca_congest_ibss, tvb(p+4,4))
+        t:add_le(f.cca_congest_obss, tvb(p+8,4))
+        t:add_le(f.cca_interference, tvb(p+12,4))
+        t:add_le(f.cca_timestamp, tvb(p+16,4))
+        t:add(f.cca_txnode, tvb(p+20,32))
+        t:add(f.cca_rxnode, tvb(p+52,32))
+        t:add_le(f.cca_xxobss, tvb(p+84,4))
+    elseif (id == 1 or id == 2) and rlen >= 4 then
+        t:add_le(f.cca_noise, tvb(p,4))
+        s = s .. string.format(", noise %d dBm", tvb(p,4):le_int())
+    elseif rlen > 0 then
+        t:add(f.payload, tvb(p,rlen))
+    end
+    return s
+end
+
+-- wl_dpsta_intf_event_t
+local function parse_dpsta(tvb, off, len, tree)
+    if len < 4 then return nil end
+    local typ = tvb(off,4):le_uint()
+    if typ ~= 1 and typ ~= 2 then return nil end
+    tree:add_le(f.dpsta_type, tvb(off,4))
+    return typ == 1 and "PSTA" or "DWDS"
+end
+
+-- wl_rrm_event_t: an 8-byte header and the measurement payload
+local function parse_rrm(tvb, off, len, tree)
+    if len < 8 or tvb(off,2):le_uint() ~= 0 then return nil end
+    local t = tree:add(tvb(off,len), "RRM Event")
+    t:add_le(f.rrm_version, tvb(off,2))
+    t:add_le(f.rrm_len, tvb(off+2,2))
+    t:add_le(f.rrm_cat, tvb(off+4,2))
+    t:add_le(f.rrm_subevent, tvb(off+6,2))
+    if len > 8 then t:add(f.payload, tvb(off+8,len-8)) end
+    return string.format("category %d, subevent %d", tvb(off+4,2):le_int(), tvb(off+6,2):le_int())
+end
+
+-- wl_event_radar_detect_data_t: radar_info is not packed, so each entry
+-- takes 12 bytes.
+local function parse_radar(tvb, off, len, tree)
+    if len < 8 or tvb(off,4):le_uint() > 0xff then return nil end
+    local t = tree:add(tvb(off,math.min(len,32)), "Radar Detected")
+    t:add_le(f.radar_version, tvb(off,4))
+    local _, cur = add_chanspec(t, f.radar_current, tvb(off+4,2), true)
+    local _, tgt = add_chanspec(t, f.radar_target, tvb(off+6,2), true)
+    for i = 0, 1 do
+        local p = off + 8 + 12 * i
+        if p + 12 > off + len then break end
+        local rt = t:add(tvb(p,12), string.format("Radar Info %u", i))
+        rt:add(f.radar_type, tvb(p,1))
+        rt:add_le(f.radar_min_pw, tvb(p+2,2))
+        rt:add_le(f.radar_max_pw, tvb(p+4,2))
+        rt:add_le(f.radar_min_pri, tvb(p+6,2))
+        rt:add_le(f.radar_max_pri, tvb(p+8,2))
+        rt:add_le(f.radar_subband, tvb(p+10,2))
+    end
+    if cur and tgt then return "on " .. chanspec_text(cur) .. ", moving to " .. chanspec_text(tgt) end
+    return cur and ("on " .. chanspec_text(cur)) or "no chanspec"
+end
+
+-- wl_event_mode_switch_t: a 16-byte header, reason data at data_offset
+local function parse_mode_switch(tvb, off, len, tree)
+    if len < 16 or tvb(off,2):le_uint() ~= 1 then return nil end
+    local doff = tvb(off+14,2):le_uint()
+    if doff < 16 or doff > len then return nil end
+    local t = tree:add(tvb(off,len), "Mode Switch")
+    t:add_le(f.ms_version, tvb(off,2))
+    t:add_le(f.ms_length, tvb(off+2,2))
+    t:add_le(f.ms_from, tvb(off+4,2))
+    t:add_le(f.ms_to, tvb(off+6,2))
+    local fl = t:add_le(f.ms_flags, tvb(off+8,4))
+    fl:add_le(f.ms_peer, tvb(off+8,4))
+    fl:add_le(f.ms_user, tvb(off+8,4))
+    fl:add_le(f.ms_state, tvb(off+8,4))
+    t:add_le(f.ms_reason, tvb(off+12,2))
+    t:add_le(f.ms_data_offset, tvb(off+14,2))
+    if len > doff then t:add(f.payload, tvb(off+doff,len-doff)) end
+    local reason = tvb(off+12,2):le_uint()
+    local state = math.floor(tvb(off+8,4):le_uint() / 4) % 4
+    return (MODESW_REASONS[reason] or ("reason " .. reason)) .. " " .. MODESW_STATES[state]
+end
+
+-- wlc_trf_thold_event_t
+local function parse_trf_thold(tvb, off, len, tree)
+    if len < 8 or tvb(off,2):le_uint() ~= 2 or tvb(off+2,2):le_uint() ~= 4 then return nil end
+    local t = tree:add(tvb(off,8), "Traffic Threshold")
+    t:add_le(f.trf_version, tvb(off,2))
+    t:add_le(f.trf_length, tvb(off+2,2))
+    t:add_le(f.trf_type, tvb(off+4,2))
+    t:add_le(f.trf_count, tvb(off+6,2))
+    return string.format("type %u, count %u", tvb(off+4,2):le_uint(), tvb(off+6,2):le_uint())
+end
+
+-- wl_event_req_bw_upgd_t
+local function parse_bw_upgrade(tvb, off, len, tree)
+    if len < 8 or tvb(off,2):le_uint() ~= 1 then return nil end
+    local t = tree:add(tvb(off,8), "Bandwidth Upgrade Request")
+    t:add_le(f.bwu_version, tvb(off,2))
+    t:add_le(f.bwu_length, tvb(off+2,2))
+    t:add_le(f.bwu_flags, tvb(off+4,2))
+    local _, c = add_chanspec(t, f.bwu_chanspec, tvb(off+6,2), true)
+    return c and ("to " .. chanspec_text(c)) or "no chanspec"
+end
+
+-- wl_event_omnm_t
+local function parse_omnm(tvb, off, len, tree)
+    if len < 12 or tvb(off,2):le_uint() ~= 1 then return nil end
+    local t = tree:add(tvb(off,12), "OMN Master")
+    t:add_le(f.omnm_version, tvb(off,2))
+    t:add_le(f.omnm_length, tvb(off+2,2))
+    t:add_le(f.omnm_type, tvb(off+4,2))
+    t:add_le(f.omnm_flags, tvb(off+6,2))
+    t:add_le(f.omnm_mod, tvb(off+8,2))
+    t:add_le(f.omnm_lock, tvb(off+10,2))
+    local mod = tvb(off+8,2):le_uint()
+    return string.format("%s, lock %u s", OMNM_MODS[mod] or ("module " .. mod), tvb(off+10,2):le_uint())
+end
+
+-- wl_edcrs_hi_event_t
+local function parse_edcrs(tvb, off, len, tree)
+    if len ~= 8 or tvb(off,2):le_uint() ~= 1 then return nil end
+    local t = tree:add(tvb(off,8), "EDCRS High")
+    t:add_le(f.edcrs_version, tvb(off,2))
+    t:add_le(f.edcrs_length, tvb(off+2,2))
+    t:add_le(f.edcrs_type, tvb(off+4,2))
+    t:add_le(f.edcrs_status, tvb(off+6,2))
+    return string.format("type %u, status %u", tvb(off+4,2):le_uint(), tvb(off+6,2):le_uint())
+end
+
+-- wl_ext_auth_evt_t: 52 bytes, or 60 where it ends with the MLD address
+local function parse_ext_auth(tvb, off, len, tree)
+    if (len ~= 52 and len < 58) or tvb(off,4):le_uint() > 32 then return nil end
+    local slen = tvb(off,4):le_uint()
+    local size = len >= 58 and 58 or 52
+    local t = tree:add(tvb(off,size), "External Authentication")
+    t:add_le(f.ea_ssid_len, tvb(off,4))
+    local ssid = slen > 0 and tvb(off+4,slen):string(ENC_UTF_8) or ""
+    t:add(f.ea_ssid, tvb(off+4,32), ssid)
+    t:add(f.ea_bssid, tvb(off+36,6))
+    t:add_le(f.ea_akm, tvb(off+44,4))
+    t:add_le(f.ea_status, tvb(off+48,4))
+    if size == 58 then t:add(f.ea_mld, tvb(off+52,6)) end
+    return ssid ~= "" and ('"' .. ssid .. '"') or "hidden SSID"
+end
+
+-- wl_color_event_t
+local function parse_color(tvb, off, len, tree)
+    if len ~= 67 or tvb(off,1):uint() > 63 or tvb(off+1,1):uint() > 1 then return nil end
+    local t = tree:add(tvb(off,67), "BSS Color")
+    t:add(f.color_own, tvb(off,1))
+    t:add(f.color_collision, tvb(off+1,1))
+    t:add(f.color_colors, tvb(off+4,63))
+    local s = "own color " .. tvb(off,1):uint()
+    return tvb(off+1,1):uint() == 1 and (s .. ", collision") or s
+end
+
+-- pmkid_cand_list_t: a count, then 7-byte candidates
+local function parse_pmkid_cand(tvb, off, len, tree)
+    if len < 4 then return nil end
+    local n = tvb(off,4):le_uint()
+    local t = tree:add(tvb(off,len), "PMKID Candidates")
+    t:add_le(f.pmkid_count, tvb(off,4))
+    local p = off + 4
+    for i = 1, n do
+        if p + 7 > off + len then
+            truncated(t, p < off + len and tvb(p, off + len - p) or tvb(off,4),
+                string.format("Candidate count is %u, but only %u fit", n, i - 1))
+            break
+        end
+        local ct = t:add(tvb(p,7), string.format("Candidate %u: %s", i - 1, macstr(tvb, p)))
+        ct:add(f.pmkid_bssid, tvb(p,6))
+        ct:add(f.pmkid_preauth, tvb(p+6,1))
+        p = p + 7
+    end
+    return n .. (n == 1 and " candidate" or " candidates")
+end
+
+-- Fixed structures, by HND event number
+local DATA_PARSERS = {
+    [21] = parse_pmkid_cand, [80] = parse_csa_complete, [124] = parse_cca, [140] = parse_dpsta,
+    [141] = parse_rrm, [160] = parse_radar, [163] = parse_mode_switch, [183] = parse_trf_thold,
+    [185] = parse_bw_upgrade, [193] = parse_ext_auth, [194] = parse_omnm, [202] = parse_color,
+    [206] = parse_edcrs, [209] = parse_csa_recv
+}
+
 -- Decode the event data. Returns an Info column suffix and, when the data
 -- shows which firmware sent the event, the name to use instead of HND's.
 local function dissect_data(tvb, etype, reason, off, len, tree)
@@ -1495,6 +1837,9 @@ local function dissect_data(tvb, etype, reason, off, len, tree)
         tree:add(f.payload, tvb(off,len))
 
     else
+        local parse = DATA_PARSERS[etype]
+        local s = parse and parse(tvb, off, len, tree)
+        if s then return s end
         tree:add(f.payload, tvb(off,len))
     end
     return nil
