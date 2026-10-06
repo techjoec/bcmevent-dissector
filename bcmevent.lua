@@ -316,7 +316,8 @@ local ACTION_CATEGORIES = {
     [0]="Spectrum Management", [1]="QoS", [2]="DLS", [3]="Block Ack", [4]="Public",
     [5]="Radio Measurement", [6]="Fast BSS Transition", [7]="HT", [8]="SA Query",
     [9]="Protected Dual of Public Action", [10]="WNM", [11]="Unprotected WNM", [12]="TDLS",
-    [13]="Mesh", [15]="Self-protected", [17]="WMM", [21]="VHT", [30]="HE", [31]="Protected HE",
+    [13]="Mesh", [15]="Self-protected", [17]="WMM", [19]="Robust AV Streaming", [21]="VHT", [30]="HE",
+    [31]="Protected HE",
     [36]="EHT", [37]="Protected EHT", [126]="Vendor-specific Protected",
     [127]="Vendor-specific"
 }
@@ -509,6 +510,38 @@ f.reason_code = ProtoField.uint16("bcmevent.mgmt.reason", "Reason Code", base.DE
 f.action_cat = ProtoField.uint8("bcmevent.mgmt.action.category", "Action Category", base.DEC,
     ACTION_CATEGORIES)
 f.action_code = ProtoField.uint8("bcmevent.mgmt.action.code", "Action Code", base.DEC)
+local BTM_STATUS = {
+    [0]="Accept", [1]="Reject", [2]="Reject: insufficient beacons", [3]="Reject: insufficient capacity",
+    [4]="Reject: BSS termination undesired", [5]="Reject: BSS termination delay requested",
+    [6]="Reject: candidate list provided", [7]="Reject: no suitable candidates", [8]="Reject: leaving ESS"
+}
+f.wnm_token = ProtoField.uint8("bcmevent.mgmt.wnm.dialog_token", "Dialog Token", base.DEC)
+f.btm_query_reason = ProtoField.uint8("bcmevent.mgmt.btm.query_reason", "Transition Query Reason", base.DEC, {
+    [0]="Unspecified", [1]="Excessive frame loss", [2]="Excessive delay", [3]="Insufficient QoS capacity",
+    [4]="First association to ESS", [5]="Load balancing", [6]="Better AP found",
+    [7]="Deauthenticated or disassociated",
+    [8]="802.1X/EAP failure", [9]="4-way handshake failure", [16]="Low RSSI", [18]="Gray zone",
+    [19]="Switching to premium AP"
+})
+f.btm_req_mode = ProtoField.uint8("bcmevent.mgmt.btm.request_mode", "Request Mode", base.HEX)
+f.btm_mode_pref = ProtoField.bool("bcmevent.mgmt.btm.request_mode.pref_cand_list", "Preferred Candidate List",
+    8, nil, 0x01)
+f.btm_mode_abridged = ProtoField.bool("bcmevent.mgmt.btm.request_mode.abridged", "Abridged", 8, nil, 0x02)
+f.btm_mode_disassoc = ProtoField.bool("bcmevent.mgmt.btm.request_mode.disassoc_imminent", "Disassociation Imminent",
+    8, nil, 0x04)
+f.btm_mode_term = ProtoField.bool("bcmevent.mgmt.btm.request_mode.bss_term", "BSS Termination Included", 8, nil, 0x08)
+f.btm_mode_ess = ProtoField.bool("bcmevent.mgmt.btm.request_mode.ess_disassoc", "ESS Disassociation Imminent",
+    8, nil, 0x10)
+local BTM_MODE_BITS = {f.btm_mode_pref, f.btm_mode_abridged, f.btm_mode_disassoc, f.btm_mode_term, f.btm_mode_ess}
+f.btm_disassoc_timer = ProtoField.uint16("bcmevent.mgmt.btm.disassoc_timer", "Disassociation Timer (TBTTs)", base.DEC)
+f.btm_validity = ProtoField.uint8("bcmevent.mgmt.btm.validity", "Validity Interval (TBTTs)", base.DEC)
+f.btm_term_duration = ProtoField.bytes("bcmevent.mgmt.btm.term_duration", "BSS Termination Duration")
+f.btm_url = ProtoField.string("bcmevent.mgmt.btm.session_url", "Session Information URL")
+f.btm_status = ProtoField.uint8("bcmevent.mgmt.btm.status", "BTM Status", base.DEC, BTM_STATUS)
+f.btm_term_delay = ProtoField.uint8("bcmevent.mgmt.btm.term_delay", "BSS Termination Delay (min)", base.DEC)
+f.btm_target = ProtoField.ether("bcmevent.mgmt.btm.target_bssid", "Target BSSID")
+f.wnm_notif_type = ProtoField.uint8("bcmevent.mgmt.wnm.notification_type", "Notification Type", base.DEC,
+    {[1]="Firmware Update", [221]="Vendor Specific"})
 
 -- wl_event_data_if
 f.if_ifidx = ProtoField.uint8("bcmevent.if_event.ifidx", "Interface Index", base.DEC)
@@ -746,6 +779,46 @@ f.airiq_seq = ProtoField.uint32("bcmevent.airiq.sequence", "Sequence", base.DEC)
 f.airiq_len = ProtoField.uint32("bcmevent.airiq.length", "AirIQ Length", base.DEC)
 f.lteu_type = ProtoField.uint8("bcmevent.lte_u.type", "LTE-U Event Type", base.DEC)
 f.lteu_len = ProtoField.uint32("bcmevent.lte_u.length", "LTE-U Length", base.DEC)
+
+-- wl_event_data_rssi_t, txdelay_event_t, health check reports, QoS management
+local AC_NAMES = {[0]="BE", [1]="BK", [2]="VI", [3]="VO"}
+local HC_TAGS = {[0xC001]="ASSERT", [0xC002]="HEALTH_CHECK_TRAP", [0xC003]="HEALTH_CHECK_ERR"}
+local HC_MODULES = {
+    [0]="UNDEFINED", [1]="PCIE", [2]="RX_DMA_STALL", [3]="RX_STALL", [4]="TX_STALL", [5]="SCAN_STALL",
+    [6]="PHY", [7]="REINIT", [8]="TXQ_STALL", [9]="SOUNDING"
+}
+f.rssi_rssi = ProtoField.int32("bcmevent.rssi.rssi", "RSSI", base.UNIT_STRING, {" dBm"})
+f.rssi_snr = ProtoField.int32("bcmevent.rssi.snr", "SNR", base.UNIT_STRING, {" dB"})
+f.rssi_noise = ProtoField.int32("bcmevent.rssi.noise", "Noise", base.UNIT_STRING, {" dBm"})
+f.td_status = ProtoField.uint8("bcmevent.txdelay.status", "Status", base.DEC)
+f.td_rssi = ProtoField.int32("bcmevent.txdelay.rssi", "RSSI", base.UNIT_STRING, {" dBm"})
+f.td_glitch = ProtoField.uint32("bcmevent.txdelay.glitch_count", "Glitches (per s)", base.DEC)
+f.td_badplcp = ProtoField.uint32("bcmevent.txdelay.bad_plcp", "Bad PLCP (per s)", base.DEC)
+f.td_ccastats = ProtoField.bytes("bcmevent.txdelay.cca_stats", "CCA Stats (0-255)")
+f.td_bgnoise = ProtoField.int8("bcmevent.txdelay.bg_noise", "Background Noise", base.UNIT_STRING, {" dBm"})
+f.td_chanspec = ProtoField.uint16("bcmevent.txdelay.chanspec", "Chanspec", base.HEX)
+f.td_timestamp = ProtoField.uint32("bcmevent.txdelay.timestamp", "Timestamp", base.DEC)
+f.td_idle = ProtoField.uint8("bcmevent.txdelay.chan_idle", "Channel Idle (0-255)", base.DEC)
+f.td_util = ProtoField.uint8("bcmevent.txdelay.chan_util", "Channel Utilization (0-255)", base.DEC)
+f.td_lost = ProtoField.uint32("bcmevent.txdelay.mpdu_lost", "MPDUs Lost", base.DEC)
+f.td_min = ProtoField.uint32("bcmevent.txdelay.delay_min", "Delay Min", base.DEC)
+f.td_max = ProtoField.uint32("bcmevent.txdelay.delay_max", "Delay Max", base.DEC)
+f.td_avg = ProtoField.uint32("bcmevent.txdelay.delay_avg", "Delay Average", base.DEC)
+f.td_hist = ProtoField.bytes("bcmevent.txdelay.delay_hist", "Delay Histogram")
+f.hc_tag = ProtoField.uint16("bcmevent.health.tag", "Alert Tag", base.HEX, HC_TAGS)
+f.hc_len = ProtoField.uint16("bcmevent.health.length", "Alert Length", base.DEC)
+f.hc_module = ProtoField.uint16("bcmevent.health.module", "Module", base.DEC, HC_MODULES, 0x00ff)
+f.hc_index = ProtoField.uint16("bcmevent.health.index", "Index", base.DEC, nil, 0xff00)
+f.hc_mlen = ProtoField.uint16("bcmevent.health.module_length", "Module Length", base.DEC)
+f.hc_rtype = ProtoField.uint16("bcmevent.health.report_type", "Report Type", base.DEC)
+f.hc_rlen = ProtoField.uint16("bcmevent.health.report_length", "Report Length", base.DEC)
+f.hc_stall_module = ProtoField.uint8("bcmevent.health.stall_module", "Stall Level", base.DEC,
+    {[1]="GLOBAL", [2]="BSSCFG", [3]="SCB"})
+f.hc_stall_type = ProtoField.uint8("bcmevent.health.stall_type", "Stall Type", base.DEC,
+    {[0]="NOTFOUND", [1]="ONCE", [2]="PROLONG"})
+f.hc_bssidx = ProtoField.uint8("bcmevent.health.bssidx", "BSS Index", base.DEC)
+f.hc_addr = ProtoField.ether("bcmevent.health.addr", "Address")
+f.qos_enabled = ProtoField.uint8("bcmevent.qos_mgmt.enabled", "Enabled", base.DEC)
 
 -- bcm_dngl_event_msg_t
 f.dngl_version = ProtoField.uint16("bcmevent.dngl.version", "Dongle Event Version", base.DEC)
@@ -1129,6 +1202,13 @@ local function parse_vendor_ie(tvb, off, len, tree)
     if name == "WPS" then parse_wps(tvb, off + 4, len - 4, tree) end
 end
 
+-- Whether a run of elements fills len exactly
+local function ies_fit(tvb, off, len)
+    local p, stop = off, off + len
+    while p + 2 <= stop do p = p + 2 + tvb(p+1,1):uint() end
+    return p == stop
+end
+
 local function parse_ies(tvb, off, len, tree)
     local p, stop = off, off + len
     local count = 0
@@ -1208,6 +1288,54 @@ local function looks_like_mgmt(tvb, off, len)
     return fc % 16 == 0 and MGMT_SUBTYPES[math.floor(fc / 16) % 16] ~= nil
 end
 
+-- WNM BSS transition management bodies (802.11 9.6.13), after category
+-- and action. Returns a summary, or nil to leave the bytes raw.
+local function parse_wnm_body(tvb, p, n, at, code)
+    if n < 1 then return nil end
+    at:add(f.wnm_token, tvb(p,1))
+    if code == 6 and n >= 2 then                          -- BTM Query
+        at:add(f.btm_query_reason, tvb(p+1,1))
+        if n > 2 and ies_fit(tvb, p + 2, n - 2) then parse_ies(tvb, p + 2, n - 2, at) end
+        return "BTM query"
+    elseif code == 7 and n >= 5 then                      -- BTM Request
+        local mode = tvb(p+1,1):uint()
+        local mi = at:add(f.btm_req_mode, tvb(p+1,1))
+        for _, b in ipairs(BTM_MODE_BITS) do mi:add(b, tvb(p+1,1)) end
+        at:add_le(f.btm_disassoc_timer, tvb(p+2,2))
+        at:add(f.btm_validity, tvb(p+4,1))
+        local q = p + 5
+        if has_bit(mode, 0x08) and q + 12 <= p + n then   -- BSS Termination Duration subelement
+            at:add(f.btm_term_duration, tvb(q,12))
+            q = q + 12
+        end
+        if has_bit(mode, 0x04) and q < p + n then         -- Session Information URL
+            local ul = tvb(q,1):uint()
+            if q + 1 + ul <= p + n then
+                if ul > 0 then at:add(f.btm_url, tvb(q+1,ul)) end
+                q = q + 1 + ul
+            end
+        end
+        if q < p + n and ies_fit(tvb, q, p + n - q) then parse_ies(tvb, q, p + n - q, at) end
+        return "BTM request"
+    elseif code == 8 and n >= 3 then                      -- BTM Response
+        local status = tvb(p+1,1):uint()
+        at:add(f.btm_status, tvb(p+1,1))
+        at:add(f.btm_term_delay, tvb(p+2,1))
+        local q = p + 3
+        if status == 0 and q + 6 <= p + n then
+            at:add(f.btm_target, tvb(q,6))
+            q = q + 6
+        end
+        if q < p + n and ies_fit(tvb, q, p + n - q) then parse_ies(tvb, q, p + n - q, at) end
+        return "BTM response, " .. (BTM_STATUS[status] or ("status " .. status))
+    elseif code == 26 and n >= 2 then                     -- WNM Notification Request
+        at:add(f.wnm_notif_type, tvb(p+1,1))
+        if n > 2 then at:add(f.payload, tvb(p+2,n-2)) end
+        return "WNM notification"
+    end
+    return nil
+end
+
 local function parse_action_body(tvb, off, len, tree)
     if len < 2 then
         tree:add(f.payload, tvb(off,len))
@@ -1219,7 +1347,12 @@ local function parse_action_body(tvb, off, len, tree)
     at:add(f.action_code, tvb(off+1,1))
     local cname = ACTION_CATEGORIES[cat] or ("category " .. cat)
     at:append_text(": " .. cname)
-    return "Action, " .. cname
+    local detail
+    if (cat == 10 or cat == 11) and len > 2 then
+        detail = parse_wnm_body(tvb, off + 2, len - 2, at, tvb(off+1,1):uint())
+    end
+    if not detail and len > 2 then at:add(f.payload, tvb(off+2,len-2)) end
+    return "Action, " .. (detail or cname)
 end
 
 local function parse_mgmt(tvb, off, len, tree)
@@ -1823,13 +1956,6 @@ local function parse_pmkid_cand(tvb, off, len, tree)
     return n .. (n == 1 and " candidate" or " candidates")
 end
 
--- Whether a run of elements fills len exactly
-local function ies_fit(tvb, off, len)
-    local p, stop = off, off + len
-    while p + 2 <= stop do p = p + 2 + tvb(p+1,1):uint() end
-    return p == stop
-end
-
 -- DEAUTH, DEAUTH_IND, DISASSOC, DISASSOC_IND: the frame body, a reason code
 -- and any elements (bcmdhd builds the management frame around it).
 local function parse_leave_body(tvb, off, len, tree, ereason)
@@ -1962,9 +2088,7 @@ local function parse_frame_or_action(tvb, off, len, tree, cats)
     if looks_like_mgmt(tvb, off, len) then return parse_mgmt(tvb, off, len, tree) end
     local cat = len >= 2 and tvb(off,1):uint()
     if cat and ACTION_CATEGORIES[cat] and (not cats or cats[cat]) then
-        local s = parse_action_body(tvb, off, len, tree)
-        if len > 2 then tree:add(f.payload, tvb(off+2,len-2)) end
-        return s
+        return parse_action_body(tvb, off, len, tree)
     end
     return nil
 end
@@ -2068,8 +2192,120 @@ local function parse_lteu(tvb, off, len, tree)
     return "type " .. tvb(off,1):uint()
 end
 
+-- LINK: an element when present (the RSN IE for WDS links)
+local function parse_link_ies(tvb, off, len, tree)
+    if len < 2 or not ies_fit(tvb, off, len) then return nil end
+    parse_ies(tvb, off, len, tree)
+    return "elements"
+end
+
+-- EAPOL_MSG: the EAPOL frame, with or without its Ethernet header
+local function parse_eapol_msg(tvb, off, len, tree, _, pinfo)
+    if len >= 18 and tvb(off+12,2):uint() == 0x888e then
+        local eth = Dissector.get("eth_withoutfcs")
+        if eth then eth:call(tvb(off,len):tvb(), pinfo, tree) return "EAPOL (Ethernet)" end
+    elseif len >= 4 and tvb(off,1):uint() >= 1 and tvb(off,1):uint() <= 3 and tvb(off+1,1):uint() <= 4
+            and tvb(off+2,2):uint() + 4 <= len then
+        local eapol = Dissector.get("eapol")
+        if eapol then eapol:call(tvb(off,len):tvb(), pinfo, tree) return "EAPOL" end
+    end
+    return nil
+end
+
+local function parse_rssi(tvb, off, len, tree)
+    if len ~= 12 then return nil end
+    tree:add_le(f.rssi_rssi, tvb(off,4))
+    tree:add_le(f.rssi_snr, tvb(off+4,4))
+    tree:add_le(f.rssi_noise, tvb(off+8,4))
+    return string.format("RSSI %d dBm, SNR %d", tvb(off,4):le_int(), tvb(off+4,4):le_int())
+end
+
+-- txdelay_event_t: status, RSSI, chanim_stats_t (80 bytes), then
+-- scb_delay_stats_t (148 bytes) per access category
+local function parse_txdelay(tvb, off, len, tree)
+    if len ~= 680 then return nil end
+    local t = tree:add(tvb(off,len), "TX Delay Event")
+    t:add(f.td_status, tvb(off,1))
+    t:add_le(f.td_rssi, tvb(off+4,4))
+    local c = off + 8
+    local ct = t:add(tvb(c,80), "Channel Statistics")
+    ct:add_le(f.td_glitch, tvb(c,4))
+    ct:add_le(f.td_badplcp, tvb(c+4,4))
+    ct:add(f.td_ccastats, tvb(c+8,9))
+    ct:add(f.td_bgnoise, tvb(c+17,1))
+    add_chanspec(ct, f.td_chanspec, tvb(c+18,2), true)
+    ct:add_le(f.td_timestamp, tvb(c+20,4))
+    ct:add(f.td_idle, tvb(c+32,1))
+    ct:add(f.td_util, tvb(c+33,1))
+    local avgs = {}
+    for ac = 0, 3 do
+        local d = off + 88 + ac * 148
+        local dt = t:add(tvb(d,148), "Delay Statistics, AC_" .. AC_NAMES[ac])
+        dt:add_le(f.td_lost, tvb(d,4))
+        dt:add_le(f.td_min, tvb(d+60,4))
+        dt:add_le(f.td_max, tvb(d+64,4))
+        dt:add_le(f.td_avg, tvb(d+68,4))
+        dt:add(f.td_hist, tvb(d+72,64))
+        avgs[#avgs+1] = AC_NAMES[ac] .. " " .. tvb(d+68,4):le_uint()
+    end
+    return "average delay " .. table.concat(avgs, ", ")
+end
+
+-- Health check alert: tag, length, module (index in the high byte), module
+-- length, then the module's report
+local function parse_health(tvb, off, len, tree)
+    if len < 8 or not HC_TAGS[tvb(off,2):le_uint()] or tvb(off+2,2):le_uint() ~= len - 4 then return nil end
+    local mlen = tvb(off+6,2):le_uint()
+    if mlen > len - 8 then return nil end
+    local t = tree:add(tvb(off,len), "Health Check")
+    t:add_le(f.hc_tag, tvb(off,2))
+    t:add_le(f.hc_len, tvb(off+2,2))
+    t:add_le(f.hc_module, tvb(off+4,2))
+    t:add_le(f.hc_index, tvb(off+4,2))
+    t:add_le(f.hc_mlen, tvb(off+6,2))
+    local mod = tvb(off+4,1):uint()
+    local p, n = off + 8, mlen
+    if n >= 4 then
+        t:add_le(f.hc_rtype, tvb(p,2))
+        t:add_le(f.hc_rlen, tvb(p+2,2))
+        local rl = math.min(tvb(p+2,2):le_uint(), n - 4)
+        local e = (mod == 3 or mod == 4 or mod == 8) and 9 or (mod == 9 and 2) or nil
+        if e and rl > 0 and rl % e == 0 then
+            for q = p + 4, p + 4 + rl - e, e do
+                local et = t:add(tvb(q,e), "Stall Report")
+                et:add(f.hc_stall_module, tvb(q,1))
+                et:add(f.hc_stall_type, tvb(q+1,1))
+                if e == 9 then
+                    et:add(f.hc_bssidx, tvb(q+2,1))
+                    et:add(f.hc_addr, tvb(q+3,6))
+                end
+            end
+        elseif rl > 0 then
+            t:add(f.payload, tvb(p+4,rl))
+        end
+    elseif n > 0 then
+        t:add(f.payload, tvb(p,n))
+    end
+    return HC_TAGS[tvb(off,2):le_uint()] .. ", " .. (HC_MODULES[mod] or ("module " .. mod))
+end
+
+-- QoS management: the event reason is the opcode
+local function parse_qos_mgmt(tvb, off, len, tree, reason)
+    if (reason == 8 or reason == 9) and len == 1 then
+        tree:add(f.qos_enabled, tvb(off,1))
+        return tvb(off,1):uint() ~= 0 and "enabled" or "disabled"
+    end
+    if ies_fit(tvb, off, len) then
+        parse_ies(tvb, off, len, tree)
+        return "elements"
+    end
+    return parse_frame_or_action(tvb, off, len, tree)
+end
+
 -- Fixed structures, by HND event number
 local DATA_PARSERS = {
+    [16] = parse_link_ies, [25] = parse_eapol_msg, [56] = parse_rssi, [95] = parse_txdelay,
+    [207] = parse_qos_mgmt, [208] = parse_health,
     [172] = parse_airiq, [179] = parse_lteu, [214] = parse_airiq,
     [0] = parse_ssid, [7] = parse_assoc_body, [9] = parse_assoc_body, [26] = parse_scan_complete,
     [60] = parse_af_complete, [149] = parse_assoc_ies, [156] = parse_wnm,
@@ -2087,7 +2323,7 @@ local DATA_PARSERS = {
 
 -- Decode the event data. Returns an Info column suffix and, when the data
 -- shows which firmware sent the event, the name to use instead of HND's.
-local function dissect_data(tvb, etype, reason, off, len, tree)
+local function dissect_data(tvb, etype, reason, off, len, tree, pinfo)
     if etype == 69 then                                 -- ESCAN_RESULT
         return parse_escan(tvb, off, len, tree)
 
@@ -2172,7 +2408,7 @@ local function dissect_data(tvb, etype, reason, off, len, tree)
 
     else
         local parse = DATA_PARSERS[etype]
-        local s = parse and parse(tvb, off, len, tree, reason)
+        local s = parse and parse(tvb, off, len, tree, reason, pinfo)
         if s then return s end
         tree:add(f.payload, tvb(off,len))
     end
@@ -2298,12 +2534,12 @@ function bcm.dissector(tvb, pinfo, tree)
     local plen = data_present(dl, datalen, tvb:reported_len() - po, tvb:len() - po)
     local suffix, name
     if plen > 0 then
-        suffix, name = dissect_data(tvb, etype, reason, po, plen, root:add(tvb(po,plen), "Event Data"))
+        suffix, name = dissect_data(tvb, etype, reason, po, plen, root:add(tvb(po,plen), "Event Data"), pinfo)
     end
-    if name then
-        ename = name
-        pinfo.cols.info = info_text(ename)
-    end
+    if name then ename = name end
+    -- A sub-dissector for the event data (EAPOL, Ethernet) rewrites these.
+    pinfo.cols.protocol = "BCMEVENT"
+    pinfo.cols.info = info_text(ename)
     if suffix then pinfo.cols.info:append(" | " .. suffix) end
     root:append_text(", " .. ename)
     return tvb:len()

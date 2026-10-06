@@ -213,10 +213,11 @@ frames = [
                 + bss(b"example", 0x1006, -55, 6, ie(0, b"example")))),
     ether(event(60, struct.pack("<I", 0x1234), status=0)),               # ACTION_FRAME_COMPLETE
     ether(event(149, ie(1, b"\x82\x84") + ie(45, bytes(26)), addr=AP)),  # PRE_ASSOC_RSEP_IND, elements
-    ether(event(156, bytes([10, 8, 1, 0, 0]))),                          # BSSTRANS_RESP, WNM action body
+    ether(event(156, bytes([10, 8, 1, 0, 0]) + AP)),                     # BSSTRANS_RESP, accept with target
     ether(event(187, mgmt(13, bytes([10, 7, 1, 0, 0])))),                # WNM_ERR, action frame
-    ether(event(191, bytes([10, 7, 2, 1, 0, 0, 0, 0]))),                 # BSSTRANS_REQ
-    ether(event(192, bytes([10, 6, 3, 0]))),                             # BSSTRANS_QUERY
+    ether(event(191, bytes([10, 7, 2, 0x05]) + struct.pack("<HB", 100, 10)
+                + ie(52, AP + bytes(7)))),                               # BSSTRANS_REQ, candidate list
+    ether(event(192, bytes([10, 6, 3, 16]))),                            # BSSTRANS_QUERY, low RSSI
     ether(event(196, bytes([10, 26, 4, 221]))),                          # WNM_NOTIFICATION_REQ
     ether(event(166, struct.pack("<HHHH", 1, 16, 2, 8) + struct.pack("<HHH", 2, 1, 0)
                 + ie(54, b"\x01\x02\x00"))),                             # FBT, over-the-air auth body
@@ -236,6 +237,19 @@ frames = [
     ether(event(179, struct.pack("<BxxxI", 9, 8))),                      # LTE_U, unknown type: payload
     ether(event(172, bytes(30))),                                        # AIRIQ, length mismatch: payload
     ether(event(198, struct.pack("<HH", 256, 9) + bytes(2))),            # ANQP length overrun: payload
+    ether(event(16, rsn([2]), flags=1, addr=AP)),                        # LINK, WDS RSN element
+    ether(event(25, STA + AP + b"\x88\x8e" + struct.pack(">BBHBHH", 2, 3, 95, 2, 0x030a, 16) + bytes(8 + 32 + 16 + 8 + 8 + 16) + struct.pack(">H", 0))),  # EAPOL_MSG, Ethernet
+    ether(event(25, struct.pack(">BBHBHH", 2, 3, 95, 2, 0x030a, 16) + bytes(8 + 32 + 16 + 8 + 8 + 16) + struct.pack(">H", 0))),  # EAPOL_MSG, 802.1X only
+    ether(event(56, struct.pack("<iii", -60, 25, -92))),                 # RSSI
+    ether(event(95, struct.pack("<BxxxiII9sbHIIIBB2x9II4x", 1, -55, 12, 3, bytes(9), -91, 0x1006, 1000, 0, 0,
+                                200, 40, *range(9), 5000)
+                + b"".join(struct.pack("<I7I7I3I16I3I", 0, *([0] * 14), 1, 9 + ac, 4 + ac, *([0] * 16), 0, 0, 0)
+                           for ac in range(4)))),                        # PKTDELAY_IND
+    ether(event(207, b"\x01", reason=8)),                                # QOS_MGMT, MSCS enabled
+    ether(event(207, ie(110, bytes(16)), reason=1)),                     # QOS_MGMT, QoS Map element
+    ether(event(207, bytes([19, 4, 1]), reason=3)),                      # QOS_MGMT, MSCS action
+    ether(event(208, struct.pack("<HHHHHH", 0xc003, 20, 0x0104, 16, 1, 9) + bytes([3, 2, 0]) + STA + bytes(3),
+                addr=bytes(6))),                                         # HEALTH_CHECK, TX stall
     ether(event(209, bytes(20))),                                        # DHD CSI_DATA: stays payload
     ether(event(202, bytes(40))),                                        # DHD PFN_PARTIAL_RESULT: payload
 ]

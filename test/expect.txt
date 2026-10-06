@@ -50,3 +50,18 @@ none: bcmevent.lte_u.type == 9
 none: bcmevent.event.type == 209 && bcmevent.event.data_len == 20 && bcmevent.csa.recv.version
 none: bcmevent.event.type == 202 && bcmevent.event.data_len == 40 && bcmevent.color.own
 bcmevent.event.type == 172 && !bcmevent.airiq.type && bcmevent.payload
+bcmevent.event.type == 16 && bcmevent.rsn.akm
+bcmevent.event.type == 25 && eth.type == 0x888e && eapol
+bcmevent.event.type == 25 && eapol && !(eth.type == 0x888e)
+bcmevent.rssi.rssi == -60 && bcmevent.rssi.snr == 25 && bcmevent.rssi.noise == -92
+bcmevent.txdelay.rssi == -55 && bcmevent.txdelay.chanspec == 0x1006 && bcmevent.txdelay.chan_util == 40
+bcmevent.txdelay.delay_avg == 7 && bcmevent.txdelay.delay_max == 12
+bcmevent.qos_mgmt.enabled == 1
+bcmevent.event.type == 207 && bcmevent.ie.id == 110
+bcmevent.event.type == 207 && bcmevent.mgmt.action.category == 19
+bcmevent.health.tag == 0xc003 && bcmevent.health.module == 4 && bcmevent.health.index == 1
+bcmevent.health.stall_type == 2 && bcmevent.health.addr == 02:00:00:00:00:02
+bcmevent.mgmt.btm.target_bssid == 02:00:00:00:00:03 && bcmevent.mgmt.btm.status == 0
+bcmevent.mgmt.btm.request_mode.disassoc_imminent && bcmevent.mgmt.btm.disassoc_timer == 100
+bcmevent.event.type == 191 && bcmevent.ie.id == 52
+bcmevent.mgmt.btm.query_reason == 16

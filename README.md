@@ -53,6 +53,9 @@ dissector.
 - SSID, association and authentication bodies, scan results, action-frame
   completion, WNM and FT events, MBO status, ANQP queries, extended probe
   requests, AirIQ and LTE-U event headers
+- EAPOL frames (handed to Wireshark's EAPOL dissector), RSSI, TX delay
+  statistics, health-check alerts, QoS management and the link RSN element
+- 802.11 BSS transition query, request and response bodies in action frames
 
 Event data with no public layout is shown as `bcmevent.payload`.
 
